@@ -78,6 +78,7 @@ ClaudeやChatGPTのアプリで使う場合は、`nihongo/` フォルダをzip�
 | `nihongo/references/` | 場面ごとの資料（会話、LINE・Slack、メール、お知らせ、UI文言、スライド、技術文書、ES、エッセイ、スピーチ、翻訳、敬語、表記、仕上げの点検など） |
 | `nihongo/references/personal-profile.md` | 自分の文体を書き込むひな形 |
 | `evaluations/` | 検証の記録と、課題の原文 |
+| `CHANGELOG.md` | 変更履歴 |
 
 場面ごとの資料は、その場面の文章を書く時だけ読む作りなので、毎回すべてを読み込むわけではありません。
 
