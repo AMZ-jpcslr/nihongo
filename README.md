@@ -73,6 +73,12 @@ npx skills add AnIT012/nihongo -g
 
 `npx skills add` は、GitHubのリポジトリからスキルを取ってきて、Claude CodeやCodexなどのスキルの置き場所に入れるコマンドです。`-g` を付けると、すべてのプロジェクトで使えるように、自分のユーザーの置き場所（Claude Codeなら `~/.claude/skills/`）に入ります。
 
+途中で、どのAIに入れるかを聞かれます。Claude Codeで使う時は、一覧の下の方にある Claude Code をスペースキーで選んでから進めてください。選ばないと、Codexなどが見る `~/.agents/skills/` にだけ入り、Claude Codeからは見えません。最初から指定する時は、次のように `-a claude-code` を付けます。
+
+```
+npx skills add AnIT012/nihongo -g -a claude-code
+```
+
 ClaudeやChatGPTのアプリで使う場合は、`nihongo/` フォルダをzipにまとめて、スキルの画面からアップロードしてください。ChatGPTでは、Skills の Create から「Upload from your computer」を選びます。
 
 スキルを入れただけだと、FullはAIが必要だと判断した時にしか読まれません。短い返事や雑談では、まず読まれません。毎回効かせるには、次の手順2でLiteを設定に入れてください。
