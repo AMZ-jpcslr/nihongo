@@ -1,4 +1,4 @@
-![nihongo — あなたのAIをネイティブに。](assets/hero.png)
+![nihongo — あなたのAIをネイティブに。](assets/hero-2.0.0.png)
 
 # nihongo
 
