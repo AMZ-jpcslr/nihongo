@@ -1,11 +1,11 @@
-![nihongo — あなたのAIをネイティブに。](assets/hero.png)
+![nihongo — あなたのAIをネイティブに。](assets/nihongo-hero.png)
 
 # nihongo
 
-[![version](https://img.shields.io/badge/version-2.1.2-D7261E)](CHANGELOG.md)
-[![stars](https://img.shields.io/github/stars/AnIT012/nihongo?style=flat&color=111111)](https://github.com/AnIT012/nihongo/stargazers)
-[![license](https://img.shields.io/badge/license-MIT-111111)](LICENSE)
-[![works with](https://img.shields.io/badge/works_with-Claude_%7C_ChatGPT_%7C_Claude_Code_%7C_Codex-555555)](#インストール)
+[![v2.1.2](https://img.shields.io/badge/-v2.1.2-D7261E?style=flat-square)](CHANGELOG.md)
+[![stars](https://img.shields.io/github/stars/AnIT012/nihongo?style=flat-square&labelColor=111111&color=D7261E)](https://github.com/AnIT012/nihongo/stargazers)
+[![license](https://img.shields.io/badge/license-MIT-D7261E?style=flat-square&labelColor=111111&color=D7261E)](LICENSE)
+[![works with](https://img.shields.io/badge/works_with-Claude_%7C_ChatGPT_%7C_Claude_Code_%7C_Codex-D7261E?style=flat-square&labelColor=111111&color=D7261E)](#インストール)
 
 実はこのREADME、nihongoを入れたAIが全部書いています。人の手では1文字も直していないので、AIっぽいと感じた所があったらIssueで教えてください！
 
