@@ -2,7 +2,10 @@
 """直した文のうち、意味が変わったかもしれない文だけを原文の文に戻す。
 
 使い方:
-    python3 revert_broken.py 原文.md 直した文.md 出力.md
+    python3 revert_broken.py 原文.md 直した文.md 出力.md [--request 依頼.md]
+
+--request には、ユーザーの依頼文を保存したファイルを渡す。依頼の中に出てくる値
+（伏せるよう頼まれた番号、変えるよう頼まれた日時など）は、頼まれた直しとして戻さない。
 
 check_meaning.py と同じ基準で原文と直した文を比べ、候補が出た所について、
 原文の該当する文と、直した文の中でいちばん近い文を探し、その文を原文の文に置き換える。
@@ -45,7 +48,7 @@ def best(sent, cands):
 
 def words_of(item):
     """候補の行から、原文の文を探すための手がかりの語を取り出す。"""
-    m = re.match(r"\[(数値・日時|コード|URL)\] 原文にあって直した文で減ったもの: (.*)", item)
+    m = re.match(r"\[(数値・日時|曜日|コード|URL)\] 原文にあって直した文で減ったもの: (.*)", item)
     if m:
         return [x.strip() for x in m.group(2).split(", ") if x.strip()], "lost"
     m = re.match(r"\[確かさ・強さ\] 「(.+?)」の言い方が(減った|増えた)", item)
@@ -54,11 +57,14 @@ def words_of(item):
     m = re.match(r"\[程度・約束\] 「(.+?)」が減った", item)
     if m:
         return [m.group(1)], "lost"
-    m = re.match(r"\[(数値・日時|コード|URL)\] 直した文で増えたもの: (.*)", item)
+    m = re.match(r"\[(数値・日時|曜日|コード|URL)\] 直した文で増えたもの: (.*)", item)
     if m:
         return [x.strip() for x in m.group(2).split(", ") if x.strip()], "added"
     if item.startswith("[否定]"):
         return None, "neg"
+    m = re.match(r"\[組み合わせ\] 「(.+?)」", item)
+    if m:
+        return [m.group(1)], "pair"
     m = re.match(r"\[消えた中身\] 中身の言葉が半分以上見当たらない文: (.*)", item)
     if m:
         return m.group(1), "gone"
@@ -80,17 +86,24 @@ def has(s, ws):
     return any(w in s for w in ws)
 
 
-def one_pass(src, dst):
+def one_pass(src, dst, request=""):
     """候補を1つずつ見て、戻す文を決めて置き換える。戻した記録も返す。"""
     S, D = spans(src), spans(dst)
+    req = norm(request)
+    owner = [best(s[2], D)[0] for s in S]  # 原文の各文が、直した文のどの文にいちばん近いか
     replace = {}   # 直した文の番号 → 置き換える原文の文
     insert = []    # (直した文の番号の後ろ, 原文の文)
     used = set()   # 戻すのに使った原文の文
 
     def put(i, sent):
-        if i not in replace and sent not in used:
-            replace[i] = sent
-            used.add(sent)
+        if i in replace or sent in used:
+            return
+        # 原文の2文以上を1文にまとめた文なら、まとめた元の文を全部戻す（片方だけ戻して中身を落とさない）
+        group = [s[2] for k, s in enumerate(S) if owner[k] == i and s[2] not in used]
+        if sent not in group:
+            group = [sent]
+        replace[i] = "".join(group)
+        used.update(group)
 
     def add(p, sent):
         if sent not in used:
@@ -98,6 +111,17 @@ def one_pass(src, dst):
             used.add(sent)
     for item in check(src, dst):
         ws, kind = words_of(item)
+        if req and kind in ("lost", "added") and ws:
+            ws = [w for w in ws if norm(w) not in req]  # 依頼に出てくる値は、頼まれた直しなので戻さない
+            if not ws:
+                continue
+        if kind == "pair":
+            for s in S:
+                if ws[0] in s[2]:
+                    i, sc = best(s[2], D)
+                    if i is not None and sc >= 0.45 and ws[0] in D[i][2]:
+                        put(i, s[2])
+            continue
         if kind in ("lost", "neg"):
             for s in S:
                 if kind == "lost" and not has(s[2], ws):
@@ -153,21 +177,27 @@ def one_pass(src, dst):
 
 
 def main():
-    if len(sys.argv) != 4:
+    args = sys.argv[1:]
+    request = ""
+    if "--request" in args:
+        k = args.index("--request")
+        request = open(args[k + 1], encoding="utf-8").read()
+        del args[k:k + 2]
+    if len(args) != 3:
         print(__doc__)
         sys.exit(2)
-    src = open(sys.argv[1], encoding="utf-8").read()
-    dst = open(sys.argv[2], encoding="utf-8").read()
+    src = open(args[0], encoding="utf-8").read()
+    dst = open(args[1], encoding="utf-8").read()
     logs = []
     n = len(check(src, dst))
     for _ in range(6):
-        new, log = one_pass(src, dst)
+        new, log = one_pass(src, dst, request)
         m = len(check(src, new))
         if not log or m >= n:
             break
         dst, n = new, m
         logs += log
-    with open(sys.argv[3], "w", encoding="utf-8") as f:
+    with open(args[2], "w", encoding="utf-8") as f:
         f.write(dst)
     if logs:
         print(f"{len(logs)}か所を原文に戻しました。")

@@ -39,7 +39,8 @@ DEGREE = ["大幅", "抜本", "全力", "心より", "心から", "深く", "根
           "一切", "絶対", "のみ", "だけ", "限り", "以上", "以下", "未満", "超え", "まで", "約", "およそ", "頃"]
 
 NEG = re.compile(r"(?:ない|なく|ません|ず[、。に]|ぬ|なし|無し|ではな)")
-NUM = re.compile(r"[0-9０-９]+(?:[.,][0-9]+)?\s*(?:%|％|件|回|分|秒|時間|時|日|週|ヶ月|か月|カ月|月|年|円|万|億|人|名|個|行|文字|字|MB|GB|KB|ms|px)?")
+NUM = re.compile(r"[0-9０-９]+(?:[.,][0-9]+)?\s*(?:%|％|件|回|分|秒|時間|時|日|週|ヶ月|か月|カ月|月|年|円|万|億|人|名|個|行|文字|字|歳|才|枚|台|本|杯|冊|部|点|倍|割|階|番|位|度|℃|TB|MB|GB|KB|ms|px|mg|kg|km|cm|mm|ml|mL|g|m|L|t)?(?![A-Za-z])")
+WEEK = re.compile(r"[月火水木金土日]曜日?|[（(][月火水木金土日][）)]")
 CODE = re.compile(r"`[^`\n]+`")
 URL = re.compile(r"https?://\S+")
 SENT = re.compile(r"[^。！？!?\n]+[。！？!?]?")
@@ -51,6 +52,9 @@ def norm(s):
     s = s.replace("```", "\n")
     s = re.sub(r"(?<![0-9])([0-9]{1,2}):00(?![0-9])", r"\1時", s)
     s = re.sub(r"(?<![0-9])([0-9]{1,2}):([0-9]{2})(?![0-9])", r"\1時\2分", s)
+    # 午前・午後の時刻は24時間表記にそろえる（午後3時 と 15時 を同じものとして扱う）
+    s = re.sub(r"午後([0-9]{1,2})時", lambda m: f"{int(m.group(1)) % 12 + 12}時", s)
+    s = re.sub(r"午前([0-9]{1,2})時", lambda m: f"{int(m.group(1)) % 12}時", s)
     return s
 
 
@@ -71,11 +75,53 @@ def count_markers(text, table):
     return {k: sum(text.count(w) for w in ws) for k, ws in table.items()}
 
 
+# 組み合わせの照合。「Aは〜」の節ごとに、Aと組になっている人名・数値・否定が、
+# 直した文で別の組に移っていないかを見る（担当や時刻の入れ替わり、否定の入れ替わり）。
+CLAUSE = re.compile(r"[^、。！？!?\n]+")
+TOPIC = re.compile(r"^\s*(?:(?:また|なお|ただし|そして)、?)?([^\s、。はが]{2,12})(?:は|が)")
+NAME = re.compile(r"[一-龥々ァ-ヴー]{1,6}(?:さん|様|氏|くん|君|先生|部長|課長)")
+
+
+def clauses(text):
+    out = []
+    for c in CLAUSE.findall(text):
+        m = TOPIC.match(c)
+        if not m:
+            continue
+        out.append(dict(topic=m.group(1), text=c, nums=[x.strip() for x in NUM.findall(c)],
+                        names=NAME.findall(c), neg=bool(NEG.search(c))))
+    return out
+
+
+def check_pairs(a, b):
+    out = []
+    ca, cb = clauses(a), clauses(b)
+    by_topic = {}
+    for c in cb:
+        by_topic.setdefault(c["topic"], []).append(c)
+    all_b = b
+    for c in ca:
+        if c["topic"] not in by_topic:
+            continue
+        cands = by_topic[c["topic"]]
+        # 人名・数値：原文でこの話題と組になっていた物が、直した文にあるのに、同じ話題の節には無い
+        for kind, items in (("人名", c["names"]), ("数値・日時", c["nums"])):
+            for x in items:
+                if x in all_b and not any(x in d[{"人名": "names", "数値・日時": "nums"}[kind]] for d in cands):
+                    now = "、".join(sorted({y for d in cands for y in d[{"人名": "names", "数値・日時": "nums"}[kind]]})) or "なし"
+                    out.append(f"[組み合わせ] 「{c['topic']}」と組の{kind}が変わった（{x} → {now}）")
+        # 否定：同じ話題の節で、否定の有無が変わった
+        if all(d["neg"] != c["neg"] for d in cands):
+            was, now = ("否定", "肯定") if c["neg"] else ("肯定", "否定")
+            out.append(f"[組み合わせ] 「{c['topic']}」の文が{was}から{now}に変わった")
+    return out
+
+
 def check(src, dst):
     a, b = norm(src), norm(dst)
     out = []
 
-    for name, pat in (("数値・日時", NUM), ("コード", CODE), ("URL", URL)):
+    for name, pat in (("数値・日時", NUM), ("曜日", WEEK), ("コード", CODE), ("URL", URL)):
         ca, cb = Counter(m.strip() for m in pat.findall(a)), Counter(m.strip() for m in pat.findall(b))
         lost = [x for x in ca if x and cb[x] < ca[x]]
         added = [x for x in cb if x and ca[x] < cb[x]]
@@ -107,6 +153,7 @@ def check(src, dst):
             kept = len(words & bwords) / len(words)
             if kept < 0.5:
                 out.append(f"[消えた中身] 中身の言葉が半分以上見当たらない文: {s.strip()[:60]}")
+    out += check_pairs(a, b)
     return out
 
 
