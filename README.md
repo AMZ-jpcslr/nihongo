@@ -2,7 +2,7 @@
 
 # nihongo
 
-[![v2.1.2](https://img.shields.io/badge/-v2.1.2-D7261E?style=flat-square)](CHANGELOG.md)
+[![v2.1.3](https://img.shields.io/badge/-v2.1.3-D7261E?style=flat-square)](CHANGELOG.md)
 [![stars](https://img.shields.io/github/stars/AnIT012/nihongo?style=flat-square&labelColor=111111&color=D7261E)](https://github.com/AnIT012/nihongo/stargazers)
 [![license](https://img.shields.io/badge/license-MIT-D7261E?style=flat-square&labelColor=111111&color=D7261E)](LICENSE)
 [![works with](https://img.shields.io/badge/works_with-Claude_%7C_ChatGPT_%7C_Codex-D7261E?style=flat-square&labelColor=111111&color=D7261E)](#インストール)
@@ -119,7 +119,7 @@ Pythonが使える環境では、推敲の最後に `nihongo/scripts/` のスク
 | `nihongo/references/` | 場面ごとの資料（会話、LINE・Slack、メール、お知らせ、UI文言、スライド、技術文書、ES、エッセイ、スピーチ、翻訳、敬語、表記、仕上げの点検など） |
 | `nihongo/references/personal-profile.md` | 自分の文体を書き込むひな形 |
 | `nihongo/scripts/` | 推敲の前後を比べて、数値・否定・確かさ・強さが変わった文や、担当・時刻が入れ替わった文だけを原文に戻すスクリプト（標準ライブラリだけで動く） |
-| `tests/` | スクリプトの回帰テスト（`python3 tests/test_scripts.py`） |
+| `tests/` | スクリプトの回帰テスト（`python3 tests/test_scripts.py` と `python3 tests/test_numeric_and_fastpath.py`） |
 | `evaluations/` | 検証の記録と、課題の原文 |
 | `CHANGELOG.md` | 変更履歴 |
 
@@ -153,6 +153,7 @@ Pythonが使える環境では、推敲の最後に `nihongo/scripts/` のスク
 
 ## 変更履歴
 
+- 2.1.3（2026-11-18）：いただいた報告をもとに、意味の崩れを照らすスクリプトの見落としと、頼まれた伏字を戻してしまう所を直しました。
 - 2.1.2（2026-11-18）：意味の崩れを照らすスクリプトで、入れ替わりの見落としと、頼まれた直しを戻してしまう所を直しました。
 - 2.1.1（2026-11-18）：Liteの読点を1文に2つまでにして、短いメッセージにも、すぐ使える答えを1つは入れるようにしました。
 - 2.1.0（2026-11-18）：推敲での直しすぎを減らし、見出しやキャッチコピーがAIっぽくなる所を直しました。

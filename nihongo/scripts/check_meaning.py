@@ -84,17 +84,34 @@ def count_markers(text, table):
 # 組み合わせの照合。「Aは〜」の節ごとに、Aと組になっている人名・数値・否定が、
 # 直した文で別の組に移っていないかを見る（担当や時刻の入れ替わり、否定の入れ替わり）。
 CLAUSE = re.compile(r"[^、。！？!?\n]+")
-TOPIC = re.compile(r"^\s*(?:(?:また|なお|ただし|そして)、?)?([^\s、。はが]{2,12})(?:は|が)")
+TOPIC_ONE = re.compile(r"\s*(?:(?:また|なお|ただし|そして)、?)?([^\s、。はが]{1,12})(?:は|が)")
 NAME = re.compile(r"[一-龥々ァ-ヴー]{1,6}(?:さん|様|氏|くん|君|先生|部長|課長)")
+NOT_TOPIC = {"で", "に", "と", "も", "それ", "これ", "あれ", "ここ", "今"}
+
+
+def topic_of(c):
+    """節の頭の「Aは」「Bが」を順に拾い、話題の鍵にする（本番では旧版は → 本番で/旧版）。
+    人名や数字の入った語は、話題ではなく組になる値なので鍵に入れない。"""
+    parts, pos = [], 0
+    while len(parts) < 3:
+        m = TOPIC_ONE.match(c, pos)
+        if not m:
+            break
+        w = m.group(1)
+        pos = m.end()
+        if w in NOT_TOPIC or NAME.fullmatch(w) or re.search(r"[0-9０-９]", w):
+            break
+        parts.append(w)
+    return "/".join(parts), (parts[-1] if parts else "")
 
 
 def clauses(text):
     out = []
     for c in CLAUSE.findall(text):
-        m = TOPIC.match(c)
-        if not m:
+        key, shown = topic_of(c)
+        if not key:
             continue
-        out.append(dict(topic=m.group(1), text=c, nums=[x.strip() for x in NUM.findall(c)],
+        out.append(dict(topic=key, shown=shown, text=c, nums=[x.strip() for x in NUM.findall(c)],
                         names=NAME.findall(c), neg=bool(NEG.search(c))))
     return out
 
@@ -115,11 +132,11 @@ def check_pairs(a, b):
             for x in items:
                 if x in all_b and not any(x in d[{"人名": "names", "数値・日時": "nums"}[kind]] for d in cands):
                     now = "、".join(sorted({y for d in cands for y in d[{"人名": "names", "数値・日時": "nums"}[kind]]})) or "なし"
-                    out.append(f"[組み合わせ] 「{c['topic']}」と組の{kind}が変わった（{x} → {now}）")
+                    out.append(f"[組み合わせ] 「{c['shown']}」と組の{kind}が変わった（{x} → {now}）")
         # 否定：同じ話題の節で、否定の有無が変わった
         if all(d["neg"] != c["neg"] for d in cands):
             was, now = ("否定", "肯定") if c["neg"] else ("肯定", "否定")
-            out.append(f"[組み合わせ] 「{c['topic']}」の文が{was}から{now}に変わった")
+            out.append(f"[組み合わせ] 「{c['shown']}」の文が{was}から{now}に変わった")
     return out
 
 

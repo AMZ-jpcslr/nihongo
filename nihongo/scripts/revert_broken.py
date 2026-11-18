@@ -86,6 +86,56 @@ def has(s, ws):
     return any(w in s for w in ws)
 
 
+# 依頼文の読み方。値が依頼に出てくるだけでは「変えてよい」にしない。
+# その値が出てくる依頼の文に、変える指示があり、残す・変えない指示が無い時だけ、頼まれた直しとみなす。
+KEEP = re.compile(r"維持|そのまま|元のまま|変更しない|変えない|変えず|変更せず|残して|残す|保持|しないで|せずに")
+CHANGE = re.compile(r"変更|変え|置き換|置換|書き換|直して|伏せ|非公開|マスク|隠|にして|にする|に修正")
+MASK = re.compile(r"[［\[【〔(（][^］\]】〕)）]{1,12}[］\]】〕)）]|[●○＊*×Xx]{2,}")
+MASK_WORDS = re.compile(r"伏せ|伏字|非公開|マスク|隠|黒塗り|置き換")
+
+
+def req_sentences(request):
+    return [s for s in re.split(r"[。！？!?\n]", norm(request)) if s.strip()]
+
+
+def allowed(w, request):
+    """依頼の中で、値 w を変えるよう頼まれているか。分からない時は頼まれていない扱い。"""
+    w = norm(w).strip()
+    if not w or not request:
+        return False
+    hit = [s for s in req_sentences(request) if w in s]
+    if not hit:
+        return False
+    return all(not KEEP.search(s) for s in hit) and any(CHANGE.search(s) for s in hit)
+
+
+def allowed_new(seg, request):
+    """直した文に入った語 seg が、依頼で頼まれた置き換え（伏字など）か。"""
+    seg = seg.strip()
+    if not seg or not request:
+        return False
+    if MASK.fullmatch(seg) and (MASK_WORDS.search(norm(request)) or seg in norm(request)):
+        return True
+    return allowed(seg, request) if len(seg) >= 2 else False
+
+
+def keep_requested(orig, draft, request):
+    """原文の文に戻す時も、依頼で頼まれた置き換え（伏字など）は、直した文のまま残す。"""
+    if not request:
+        return orig
+    sm = difflib.SequenceMatcher(None, orig, draft, autojunk=False)
+    out = []
+    for op, a1, a2, b1, b2 in sm.get_opcodes():
+        seg = draft[b1:b2]
+        if op in ("replace", "insert") and allowed_new(seg, request):
+            out.append(seg)
+        elif op == "insert":
+            continue
+        else:
+            out.append(orig[a1:a2])
+    return "".join(out)
+
+
 def one_pass(src, dst, request=""):
     """候補を1つずつ見て、戻す文を決めて置き換える。戻した記録も返す。"""
     items = check(src, dst)
@@ -115,15 +165,17 @@ def one_pass(src, dst, request=""):
     for item in items:
         ws, kind = words_of(item)
         if req and kind in ("lost", "added") and ws:
-            ws = [w for w in ws if norm(w) not in req]  # 依頼に出てくる値は、頼まれた直しなので戻さない
+            ws = [w for w in ws if not allowed(w, request)]  # 変えるよう頼まれた値は戻さない
             if not ws:
                 continue
         if kind == "pair":
+            # 話題の語を含む文どうしで、いちばん近い組を戻す（似た形の別の文と取り違えない）
+            idx = [k for k, d in enumerate(D) if ws[0] in d[2]]
             for s in S:
-                if ws[0] in s[2]:
-                    i, sc = best(s[2], D)
-                    if i is not None and sc >= 0.45 and ws[0] in D[i][2]:
-                        put(i, s[2])
+                if ws[0] in s[2] and idx:
+                    j, sc = best(s[2], [D[k] for k in idx])
+                    if j is not None and sc >= 0.45:
+                        put(idx[j], s[2])
             continue
         if kind in ("lost", "neg"):
             for s in S:
@@ -165,9 +217,10 @@ def one_pass(src, dst, request=""):
                 log.append(f"差し込んだ：{s.strip()[:50]}")
     for i, (a, b, t) in enumerate(D):
         out.append(dst[last:a])
-        if i in replace:
-            out.append(fit(replace[i], t))
-            log.append(f"戻した：{t.strip()[:30]} → {replace[i].strip()[:30]}")
+        new = fit(keep_requested(replace[i], t, request), t) if i in replace else t
+        if i in replace and new.strip() != t.strip():
+            out.append(new)
+            log.append(f"戻した：{t.strip()[:30]} → {new.strip()[:30]}")
         else:
             out.append(t)
         for s in ins_after.get(i, []):
