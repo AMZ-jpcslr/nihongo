@@ -88,6 +88,9 @@ def has(s, ws):
 
 def one_pass(src, dst, request=""):
     """候補を1つずつ見て、戻す文を決めて置き換える。戻した記録も返す。"""
+    items = check(src, dst)
+    if not items:
+        return dst, []
     S, D = spans(src), spans(dst)
     req = norm(request)
     owner = [best(s[2], D)[0] for s in S]  # 原文の各文が、直した文のどの文にいちばん近いか
@@ -109,7 +112,7 @@ def one_pass(src, dst, request=""):
         if sent not in used:
             insert.append((p, sent))
             used.add(sent)
-    for item in check(src, dst):
+    for item in items:
         ws, kind = words_of(item)
         if req and kind in ("lost", "added") and ws:
             ws = [w for w in ws if norm(w) not in req]  # 依頼に出てくる値は、頼まれた直しなので戻さない
