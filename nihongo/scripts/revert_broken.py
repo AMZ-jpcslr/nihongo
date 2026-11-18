@@ -4,8 +4,8 @@
 使い方:
     python3 revert_broken.py 原文.md 直した文.md 出力.md [--request 依頼.md]
 
---request には、ユーザーの依頼文を保存したファイルを渡す。依頼の中に出てくる値
-（伏せるよう頼まれた番号、変えるよう頼まれた日時など）は、頼まれた直しとして戻さない。
+--request には、ユーザーの依頼文を保存したファイルを渡す。変更する項目と操作を
+確認できた編集（番号の伏字化、指定された日時への変更など）は、そのまま残す。
 
 check_meaning.py と同じ基準で原文と直した文を比べ、候補が出た所について、
 原文の該当する文と、直した文の中でいちばん近い文を探し、その文を原文の文に置き換える。
@@ -105,7 +105,7 @@ def has(s, ws):
 
 # 依頼文の読み方。値が依頼に出てくるだけでは「変えてよい」にしない。
 # その値が出てくる依頼の文に、変える指示があり、残す・変えない指示が無い時だけ、頼まれた直しとみなす。
-KEEP = re.compile(r"維持|そのまま|元のまま|変更しない|変えない|変えず|変更せず|残して|残す|保持|しないで|せずに")
+KEEP = re.compile(r"維持|そのまま|元のまま|変更しない|変えない|変えず|変更せず|残して|残す|保持|しないで|せずに|(?:変える|変更する|直す|修正する)必要(?:は|が)(?:ない|ありません)")
 CHANGE = re.compile(r"変更|変え|置き換|置換|書き換|直して|伏せ|非公開|マスク|隠|にして|にする|に修正|削除|消して|消す|外して|除いて|取り除")
 MASK = re.compile(r"[［\[【〔(（][^］\]】〕)）]{1,12}[］\]】〕)）]|[●○＊*×Xx]{2,}")
 MASK_WORDS = re.compile(r"伏せ|伏字|非公開|マスク|隠|黒塗り|置き換")
@@ -113,12 +113,11 @@ MASK_PLAIN = r"非公開|伏せ字|伏字|非表示|秘匿"   # 括弧なしで�
 EMAIL = r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+"
 PHONE = r"\+?[0-9０-９]{2,4}[-－‐][0-9０-９]{2,4}[-－‐][0-9０-９]{3,4}|[0-9０-９]{10,11}"
 VALUE = re.compile(EMAIL + "|" + PHONE)
-TOKEN = re.compile("|".join([MASK.pattern, MASK_PLAIN, EMAIL, PHONE, NUM.pattern, r"[\s\S]"]))
+PHONE_MASK = r"[0-9０-９*＊●×]{2,4}[-－‐][0-9０-９*＊●×]{2,4}[-－‐][0-9０-９*＊●×]{3,4}"
+TOKEN = re.compile("|".join([PHONE_MASK, MASK.pattern, MASK_PLAIN, EMAIL, PHONE, NUM.pattern, r"[\s\S]"]))
 AFTER_VALUE = re.compile(r"^(?:まで|宛て|宛|へ|に)")
-
-
-def req_sentences(request):
-    return [s for s in re.split(r"[。！？!?\n]", norm(request)) if s.strip()]
+DELETE = re.compile(r"削除|消して|消す|外して|除いて|取り除")
+REDACT = re.compile(r"伏せ|伏字|非公開|マスク|隠|黒塗り")
 
 
 def req_clauses(request):
@@ -130,7 +129,7 @@ def allowed(w, request):
     w = norm(w).strip()
     if not w or not request:
         return False
-    hit = [s for s in req_sentences(request) if w in s]
+    hit = [s for s in req_clauses(request) if w in s]
     if not hit:
         return False
     return all(not KEEP.search(s) for s in hit) and any(CHANGE.search(s) for s in hit)
@@ -138,16 +137,53 @@ def allowed(w, request):
 
 def is_mask(seg):
     seg = seg.strip()
-    return bool(seg) and bool(MASK.fullmatch(seg) or re.fullmatch(MASK_PLAIN, seg))
+    partial = re.fullmatch(PHONE_MASK, seg) and re.search(r"[*＊●×]{2,}", seg)
+    return bool(seg) and bool(MASK.fullmatch(seg) or re.fullmatch(MASK_PLAIN, seg) or partial)
 
 
 def label_of(before):
     """値の直前にある項目名（電話番号は〜 の「電話番号」）。無ければ空。"""
-    words = CONTENT.findall(norm(before)[-12:])
+    before = re.split(r"[、。！？!?\n]", norm(before))[-1]
+    m = re.match(r"(.+?)(?:は|が|:)", before)
+    if m:
+        return m.group(1).strip()
+    words = CONTENT.findall(before[-12:])
     return words[-1] if words else ""
 
 
-def value_ok(value, before, request):
+def matches_target(value, label, clause):
+    """項目が指定されていれば、同じ値の別項目には許可を広げない。"""
+    m = re.match(r"(.+?)(?:を|は|が)", clause.strip())
+    target = re.sub(r"(?:だけ|のみ)$", "", m.group(1)) if m else ""
+    # 「電話番号の市外局番以外」のような部分指定も、電話番号に対する操作。
+    target = re.sub(r"^(電話番号|電話|番号)の.+以外$", r"\1", target)
+    if target.endswith(value) and target != value:
+        prefix = target[:-len(value)].strip()
+        if prefix not in ("最大", "最小", "約", "およそ"):
+            target = prefix
+    bare_value = re.sub(r"^(?:最大|最小|約|およそ)", "", target)
+    if target and not NUM.fullmatch(bare_value) and not VALUE.fullmatch(bare_value):
+        if label and target in label:
+            return True
+        if label and target.startswith(label):
+            suffix = target[len(label):].strip()
+            if suffix == value or NUM.fullmatch(suffix) or VALUE.fullmatch(suffix):
+                return True
+        # 「本人の電話番号」などの限定を、単なる電話番号の指定に広げない。
+        if target in ("電話番号", "電話", "番号", "TEL", "tel"):
+            return bool(re.fullmatch(PHONE, value))
+        if target in ("メール", "メールアドレス", "アドレス", "連絡先"):
+            return bool(re.fullmatch(EMAIL, value))
+        return False
+    return value in clause or bool(label and label in clause)
+
+
+def destination_in(value, clause):
+    """変更先として書かれた値か（単に依頼に登場する値とは区別する）。"""
+    return bool(re.search(re.escape(norm(value).strip()) + r'[」』”"\]]*\s*(?:に|へ)', clause))
+
+
+def value_ok(value, before, request, operation=None, new=""):
     """原文の値 value を、依頼どおりに変える・伏せる・消してよいか。
     値そのものか、その項目名が、変える指示のある依頼の節に出てくる時だけ認める。
     同じ値か項目名が、残す指示のある節に出てくる時は認めない（定員は20名を維持、など）。"""
@@ -158,16 +194,26 @@ def value_ok(value, before, request):
         return False
     clauses = req_clauses(request)
     for c in clauses:
-        if KEEP.search(c) and (v in c or (label and label in c)):
+        if KEEP.search(c) and matches_target(v, label, c):
             return False
     for c in clauses:
         if not CHANGE.search(c) or KEEP.search(c):
             continue
-        if v in c or (label and label in c):
+        if not matches_target(v, label, c):
+            continue
+        deletion = bool(DELETE.search(c))
+        masking = bool(REDACT.search(c) or any(is_mask(t) for t in TOKEN.findall(c)))
+        replacement = any(
+            t.strip() != v and destination_in(t, c)
+            for t in TOKEN.findall(c) if NUM.fullmatch(t) or VALUE.fullmatch(t)
+        )
+        if operation == "delete" and deletion:
             return True
-        if re.fullmatch(PHONE, v) and re.search(r"電話|番号|TEL|tel", c):
+        if operation == "mask" and masking:
             return True
-        if re.fullmatch(EMAIL, v) and re.search(r"メール|アドレス|連絡先", c):
+        if operation == "replace" and destination_in(new, c):
+            return True
+        if operation is None and (deletion or masking or replacement):
             return True
     return False
 
@@ -181,22 +227,21 @@ def allowed_new(seg, request, old="", before=""):
     if is_mask(seg):
         if not (MASK_WORDS.search(norm(request)) or seg in norm(request)):
             return False
-        return value_ok(old, before, request) if old.strip() else True
-    if old.strip() and not value_ok(old, before, request) and not allowed(old, request):
+        return value_ok(old, before, request, "mask") if old.strip() else False
+    if old.strip() and not value_ok(old, before, request, "replace", seg):
         return False
     return allowed(seg, request) if len(seg) >= 2 else False
 
 
 def allowed_lost(w, src, request):
     """原文から減った値 w が、依頼で変える・伏せる・消すよう頼まれた物か。"""
-    if allowed(w, request):
-        return True
     n = norm(src)
+    found = []
     for m in TOKEN.finditer(n):
         if w in m.group() and (VALUE.fullmatch(m.group()) or NUM.fullmatch(m.group())):
-            if value_ok(m.group(), n[max(0, m.start() - 12):m.start()], request):
-                return True
-    return False
+            found.append(value_ok(m.group(), n[:m.start()], request))
+    # 値のどれか一つが許可されただけでは、候補全体を消さない。
+    return all(found) if found else allowed(w, request)
 
 
 def tokens(text):
@@ -213,29 +258,24 @@ def keep_requested(orig, draft, request):
     out = []
     for op, a1, a2, b1, b2 in sm.get_opcodes():
         old, new = "".join(A[a1:a2]), "".join(B[b1:b2])
-        before = "".join(A[max(0, a1 - 8):a1])
+        before = "".join(A[:a1])
         if op in ("replace", "insert") and allowed_new(new, request, old, before):
             out.append(new)
         elif op == "insert":
             continue
-        elif op == "delete" and value_ok(old, before, request):
+        elif op == "delete" and value_ok(old, before, request, "delete"):
             continue
         else:
             out.append(old)
     return "".join(out)
 
 
-def strip_requested(s, request, new_side=False):
-    """依頼で変える・伏せる・消すよう頼まれた値（伏字や新しい値）を文から抜く。
-    抜いた後の2文を比べて、ほかに違いが無ければ、その文は頼まれた直しだけの文とみなす。"""
+def strip_deleted(s, request):
+    """明示的な削除対象だけを抜く。削除に伴う助詞の調整を照合するために使う。"""
     out, pos = [], 0
     for m in TOKEN.finditer(s):
         tok = m.group()
-        if new_side:
-            drop = is_mask(tok) and MASK_WORDS.search(norm(request)) or (
-                (NUM.fullmatch(tok) or VALUE.fullmatch(tok)) and allowed(tok, request))
-        else:
-            drop = (NUM.fullmatch(tok) or VALUE.fullmatch(tok)) and value_ok(tok, s[max(0, m.start() - 12):m.start()], request)
+        drop = (NUM.fullmatch(tok) or VALUE.fullmatch(tok)) and value_ok(tok, s[:m.start()], request, "delete")
         if drop:
             out.append(s[pos:m.start()])
             pos = m.end()
@@ -250,8 +290,10 @@ def requested_only(orig, draft, request):
     """直した文 draft と原文の文 orig の違いが、依頼で頼まれた直しだけか。"""
     if not request or orig.strip() == draft.strip():
         return False
-    a, b = strip_requested(orig, request), strip_requested(draft, request, new_side=True)
-    if a == orig and b == draft:
+    if keep_requested(orig, draft, request) == draft:
+        return True
+    a, b = strip_deleted(orig, request), draft
+    if a == orig:
         return False
     return not check(a, b) and sim(a, b) >= 0.6
 
@@ -263,13 +305,14 @@ def requested_mask_exists(orig, drafts, request):
     return any(requested_only(orig.strip(), d.strip(), request) for _, _, d in drafts)
 
 
-def one_pass(src, dst, request=""):
+def one_pass(src, dst, request="", items=None):
     """候補を1つずつ見て、戻す文を決めて置き換える。戻した記録も返す。"""
-    items = check(src, dst)
+    if items is None:
+        items = remaining(src, dst, request)
     if not items:
         return dst, []
     S, D = spans(src), spans(dst)
-    req = norm(request)
+    unchanged_texts = {d[2] for d in D if not is_heading(d[2])}
     owner = owner_of(S, D)  # 原文の各文が、直した文のどの文に当たるか
     # 依頼で頼まれた直しだけの文は、戻さない（電話番号を消した文、伏せた文など）
     protected = set()
@@ -297,10 +340,6 @@ def one_pass(src, dst, request=""):
             used.add(sent)
     for item in items:
         ws, kind = words_of(item)
-        if req and kind in ("lost", "added") and ws:
-            ws = [w for w in ws if not allowed_lost(w, src, request)]  # 変えるよう頼まれた値は戻さない
-            if not ws:
-                continue
         if kind == "pair":
             # 話題の語を含む文どうしで、いちばん近い組を戻す（似た形の別の文と取り違えない）
             idx = [k for k, d in enumerate(D) if ws[0] in d[2]]
@@ -312,6 +351,8 @@ def one_pass(src, dst, request=""):
             continue
         if kind in ("lost", "neg"):
             for s in S:
+                if s[2] in unchanged_texts:
+                    continue
                 if kind == "lost" and not has(s[2], ws):
                     continue
                 i, sc = best(s[2], D)
@@ -370,10 +411,47 @@ def one_pass(src, dst, request=""):
     return "".join(out), log
 
 
+def requested_reference(src, dst, request):
+    """対応が一対一の文だけ、許可した編集を反映した照合用の原文を作る。"""
+    S, D = spans(src), spans(dst)
+    # 同じ文はそのまま照合できる。変更のない長文を毎回総当たりで比較しない。
+    exact = {}
+    for i, (_, _, text) in enumerate(D):
+        exact.setdefault(text.strip(), []).append(i)
+    unchanged, matched = set(), set()
+    for k, (_, _, text) in enumerate(S):
+        indices = exact.get(text.strip(), [])
+        if indices:
+            unchanged.add(k)
+            matched.add(indices.pop())
+    changed = [k for k in range(len(S)) if k not in unchanged]
+    drafts = [d for i, d in enumerate(D) if i not in matched]
+    owners = owner_of([S[k] for k in changed], drafts)
+    owner = dict(zip(changed, owners))
+    out, last = [], 0
+    for k, (a, b, text) in enumerate(S):
+        i = owner.get(k)
+        out.append(src[last:a])
+        if i is not None and owners.count(i) == 1:
+            draft = drafts[i][2]
+            text = draft if requested_only(text, draft, request) else keep_requested(text, draft, request)
+        out.append(text)
+        last = b
+    out.append(src[last:])
+    return "".join(out)
+
+
 def remaining(src, dst, request=""):
     """戻した後に残る候補。依頼で変える・伏せる・消すよう頼まれた値だけの候補は数えない。"""
-    out = []
-    for item in check(src, dst):
+    items = check(src, dst)
+    if not request or not items:
+        return items
+    # 値の文字列だけで警告を消さず、許可された出現箇所を反映して個数を照合する。
+    contextual = ("[数値・日時]", "[組み合わせ]")
+    out = [item for item in check(requested_reference(src, dst, request), dst) if item.startswith(contextual)]
+    for item in items:
+        if item.startswith(contextual):
+            continue
         ws, kind = words_of(item)
         if request and kind == "lost" and ws and all(allowed_lost(w, src, request) for w in ws):
             continue
@@ -396,13 +474,16 @@ def main():
     src = open(args[0], encoding="utf-8").read()
     dst = open(args[1], encoding="utf-8").read()
     logs = []
-    n = len(remaining(src, dst, request))
+    rest = remaining(src, dst, request)
+    n = len(rest)
     for _ in range(6):
-        new, log = one_pass(src, dst, request)
-        m = len(remaining(src, new, request))
+        new, log = one_pass(src, dst, request, rest)
+        next_rest = remaining(src, new, request)
+        m = len(next_rest)
         if not log or m >= n:
             break
         dst, n = new, m
+        rest = next_rest
         logs += log
     with open(args[2], "w", encoding="utf-8") as f:
         f.write(dst)
@@ -412,7 +493,6 @@ def main():
             print("- " + x)
     else:
         print("戻した所はありません。")
-    rest = remaining(src, dst, request)
     if rest:
         print(f"残っている候補が{len(rest)}件あります（読み比べて、同じ意味ならそのままでよい）：")
         for x in rest:
