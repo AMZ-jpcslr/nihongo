@@ -1,0 +1,75 @@
+name: release
+
+# 手で動かすリリース。Actions タブで「Run workflow」を押し、版番号（例：2.3.1）を入れる。
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "版番号（例：2.3.1。先頭に v は付けない）"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ inputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 版番号を確かめる
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "版番号は 2.3.1 の形で入れてください: $VERSION"; exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+            echo "タグ v$VERSION はもうあります"; exit 1
+          fi
+          grep -q "version: \"$VERSION\"" nihongo/SKILL.md || { echo "SKILL.md の version が $VERSION ではありません"; exit 1; }
+          head -1 nihongo/ALWAYS.md | grep -q "Lite $VERSION" || { echo "ALWAYS.md の1行目が $VERSION ではありません"; exit 1; }
+          grep -q "^## $VERSION（" CHANGELOG.md || { echo "CHANGELOG.md に $VERSION の節がありません"; exit 1; }
+          if grep -q "^## $VERSION（未リリース）" CHANGELOG.md; then
+            echo "CHANGELOG.md の $VERSION が「未リリース」のままです。日付を入れてください"; exit 1
+          fi
+
+      - name: テストを動かす
+        run: |
+          python3 -m pip install --quiet pytest
+          python3 -m pytest -q tests
+
+      - name: 配布ファイルを作る
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          git archive --format=zip --prefix="nihongo/" -o "dist/nihongo-v$VERSION.zip" HEAD:nihongo
+          git archive --format=tar.gz --prefix="nihongo-v$VERSION/" -o "dist/nihongo-v$VERSION-source.tar.gz" HEAD
+          (cd dist && sha256sum ./*.zip ./*.tar.gz | sed 's# \./# #' > SHA256SUMS.txt)
+          cat dist/SHA256SUMS.txt
+
+      - name: リリースの本文を作る
+        run: |
+          set -euo pipefail
+          awk -v v="## $VERSION（" 'index($0, v) == 1 {f=1; next} /^## / && f {exit} f' CHANGELOG.md > notes.md
+          {
+            echo
+            echo "## SHA-256"
+            echo
+            echo '```'
+            cat dist/SHA256SUMS.txt
+            echo '```'
+          } >> notes.md
+          cat notes.md
+
+      - name: タグとリリースを作る
+        run: |
+          gh release create "v$VERSION" dist/* \
+            --target "$GITHUB_SHA" \
+            --title "v$VERSION" \
+            --notes-file notes.md
