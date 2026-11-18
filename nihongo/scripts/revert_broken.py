@@ -329,6 +329,7 @@ def one_pass(src, dst, request="", items=None):
         if len(ks) == 1 and requested_only(S[ks[0]][2], d[2], request):
             protected.add(i)
     replace = {}   # 直した文の番号 → 置き換える原文の文
+    drop = set()   # 原文の1文を分けた片割れで、戻した文に含まれるので消す直した文
     insert = []    # (直した文の番号の後ろ, 原文の文)
     used = set()   # 戻すのに使った原文の文
 
@@ -341,6 +342,24 @@ def one_pass(src, dst, request="", items=None):
             group = [sent]
         replace[i] = "".join(group)
         used.update(group)
+        # 原文の1文を直した文で2文に分けていたら、隣の片割れも消す（片方だけ戻して中身を二重にしない）
+        if len(group) == 1:
+            for j in (i - 1, i + 1):
+                if 0 <= j < len(D) and j not in replace and j not in protected and split_part(j, sent):
+                    drop.add(j)
+
+    def split_part(j, sent):
+        """直した文 j が、原文の文 sent を分けた片割れか。"""
+        t = D[j][2]
+        if t in unchanged_texts and any(t.strip() == x[2].strip() for x in S):
+            return False
+        k, _ = best(t, S)
+        if k is None or S[k][2] != sent or any(o == j for o in owner):
+            return False
+        # 短い片割れは長い原文の文との近さが低く出るので、片割れの何割が原文の文に含まれるかで見る
+        a, b = norm(t), norm(sent)
+        hit = sum(m.size for m in difflib.SequenceMatcher(None, a, b).get_matching_blocks())
+        return hit / max(len(a), 1) >= 0.5
 
     def add(p, sent):
         if sent not in used:
@@ -394,6 +413,7 @@ def one_pass(src, dst, request="", items=None):
                 continue
             prev = best(S[k - 1][2], D)[0] if k > 0 else None
             add(prev, s[2])
+    drop -= set(replace)
     if not replace and not insert:
         return dst, []
     log = []
@@ -408,6 +428,10 @@ def one_pass(src, dst, request="", items=None):
                 log.append(f"差し込んだ：{s.strip()[:50]}")
     for i, (a, b, t) in enumerate(D):
         out.append(dst[last:a])
+        if i in drop:
+            log.append(f"まとめて戻した片割れを消した：{t.strip()[:30]}")
+            last = b
+            continue
         new = fit(keep_requested(replace[i], t, request), t) if i in replace else t
         if i in replace and new.strip() != t.strip():
             out.append(new)
