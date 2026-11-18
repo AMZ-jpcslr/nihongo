@@ -2,7 +2,7 @@
 
 # nihongo
 
-[![v2.1.4](https://img.shields.io/badge/-v2.1.4-D7261E?style=flat-square)](CHANGELOG.md)
+[![v2.2.0](https://img.shields.io/badge/-v2.2.0-D7261E?style=flat-square)](CHANGELOG.md)
 [![stars](https://img.shields.io/github/stars/AnIT012/nihongo?style=flat-square&labelColor=111111&color=D7261E)](https://github.com/AnIT012/nihongo/stargazers)
 [![license](https://img.shields.io/badge/license-MIT-D7261E?style=flat-square&labelColor=111111&color=D7261E)](LICENSE)
 [![works with](https://img.shields.io/badge/works_with-Claude_%7C_ChatGPT_%7C_Codex-D7261E?style=flat-square&labelColor=111111&color=D7261E)](#インストール)
@@ -11,6 +11,15 @@
 
 nihongoは、AIが書く日本語を人が書く文に近づけるエージェントスキルです。書いた文を後から直すだけでなく、メール、お知らせ、Slack、README、ES、意見文などを書く時から使えます。
 
+## まず試す（Claude Code）
+
+```
+npx skills add AnIT012/nihongo -g -a claude-code
+echo '@~/.claude/skills/nihongo/ALWAYS.md' >> ~/.claude/CLAUDE.md
+```
+
+1行目でスキルを入れ、2行目で `CLAUDE.md` の最後に1行足して、Liteが毎回読み込まれるようにします。メールや資料を書く時はFullが自動で使われ、それ以外で使いたい時は「nihongoで直して」と頼むか `/nihongo` と送ります。更新は `npx skills update nihongo -g` です。Codex、Claude・ChatGPTのアプリでの入れ方は[インストール](#インストール)にあります。
+
 ## 特徴
 
 AIの日本語の違和感は、決まった言い回しだけから出るわけではありません。相手との距離に合わない敬語や中身のない前置き、1文ずつは正しいのに続けて読むと細切れになる文章もその一つです。nihongoは禁止語を並べる代わりに、読み手・目的・載せる場所・書き手から、その場にいる人ならどう書くかを判断する手順をまとめています。
@@ -18,6 +27,7 @@ AIの日本語の違和感は、決まった言い回しだけから出るわけ
 - お知らせ・お詫び・目上への文は硬い言葉と定型の敬語を残し、くだけた言い方に崩すのは友達とのやりとりだけにする
 - 中身のない言葉（活用、実現、本質的）は普通の動詞に戻し、宣伝文の勢いや本人の気持ちの言葉は残す
 - 文を分けるかつなげるかを、句点の数ではなく、情報のまとまりと流れで決める
+- 読点は、読み違えそうな所と長い前置きの後にだけ打ち、短い文の頭の「今日は、」のような読点は打たない
 - 自然な文は無理に直さず、数字・日付・条件・誰が何をするかは変えない
 - 依頼に無い感想・理由・約束は書き足さず、中身が分からない時は聞き返す
 
@@ -60,10 +70,10 @@ nihongoには、普段の返事に毎回読み込む短いLiteと、詳しい手
 
 | | Lite | Full |
 |---|---|---|
-| ファイル | `nihongo/ALWAYS.md`（約1,500字） | `nihongo/SKILL.md` と `references/` |
+| ファイル | `nihongo/ALWAYS.md`（約1,600字） | `nihongo/SKILL.md` と `references/` |
 | 使う場面 | 普段の返事、雑談、短い質問まで毎回 | メール、お知らせ、ES、資料、README、UIの文言 |
 | 読み込まれ方 | 設定に入れておけば、毎回読み込まれる | 人に出す文章を書く時に、Liteの指示で自動で読まれる。名前を出して呼ぶこともできる |
-| 増えるトークン（目安） | 約1,100 | 約9,000 |
+| 増えるトークン（目安） | 約1,200 | 約9,000 |
 
 Liteを入れておくと、普段はLiteだけを使い、人に出す文章を書く時だけFullまで読みます。トークンを抑えながら、大事な文章では詳しい手順を使えます。
 
@@ -122,7 +132,7 @@ Pythonが使える環境では、推敲の最後に `nihongo/scripts/` のスク
 | `nihongo/SKILL.md` | Full。全体の原則、判断の優先順位、生成と推敲の進め方、句点と文章全体のリズム |
 | `nihongo/references/` | 場面ごとの資料（会話、LINE・Slack、メール、お知らせ、UI文言、スライド、技術文書、ES、エッセイ、スピーチ、翻訳、敬語、表記、仕上げの点検など） |
 | `nihongo/references/personal-profile.md` | 自分の文体を書き込むひな形 |
-| `nihongo/scripts/` | 推敲の前後を比べて、数値・否定・確かさ・強さが変わった文や、担当・時刻が入れ替わった文だけを原文に戻すスクリプト（標準ライブラリだけで動く） |
+| `nihongo/scripts/` | 推敲の前後を比べて、意味が変わった文だけを原文に戻すスクリプトと、要らない読点を外すスクリプト（どちらも標準ライブラリだけで動く） |
 | `tests/` | スクリプトの回帰テスト（`for t in tests/test_*.py; do python3 $t; done` で全部を回せます） |
 | `evaluations/` | 検証の記録と、課題の原文 |
 | `CHANGELOG.md` | 変更履歴 |
@@ -160,6 +170,7 @@ Pythonが使える環境では、推敲の最後に `nihongo/scripts/` のスク
 
 ## 変更履歴
 
+- 2.2.0（2026-11-18）：AIの文で一番多い、短い語句の後の読点を減らしました。Fullは、書き終えた文から要らない読点をスクリプトで外します。READMEの先頭に、コピペで始められる手順を足しました。
 - 2.1.4（2026-11-18）：伏字・削除・時刻変更など、依頼で頼まれた直しを戻してしまう所と、入れ替わった文を戻した時に誤った文が残る所を直しました。ファイルに版を書き、報告の形を決めました。
 - 2.1.3（2026-11-18）：いただいた報告をもとに、意味の崩れを照らすスクリプトの見落としと、頼まれた伏字を戻してしまう所を直しました。
 - 2.1.2（2026-11-18）：意味の崩れを照らすスクリプトで、入れ替わりの見落としと、頼まれた直しを戻してしまう所を直しました。
