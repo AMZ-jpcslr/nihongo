@@ -2,14 +2,21 @@
 
 # nihongo
 
-[![v2.2.0](https://img.shields.io/badge/-v2.2.0-D7261E?style=flat-square)](CHANGELOG.md)
+[![v2.3.0](https://img.shields.io/badge/-v2.3.0-D7261E?style=flat-square)](CHANGELOG.md)
 [![stars](https://img.shields.io/github/stars/AnIT012/nihongo?style=flat-square&labelColor=111111&color=D7261E)](https://github.com/AnIT012/nihongo/stargazers)
 [![license](https://img.shields.io/badge/license-MIT-D7261E?style=flat-square&labelColor=111111&color=D7261E)](LICENSE)
 [![works with](https://img.shields.io/badge/works_with-Claude_%7C_ChatGPT_%7C_Codex_%7C_Muse-D7261E?style=flat-square&labelColor=111111&color=D7261E)](#インストール)
 
 実はこのREADME、nihongoを入れたAIが全部書いています。人の手では1文字も直していないので、AIっぽいと感じた所があったらIssueで教えてください！
 
-nihongoは、AIが書く日本語を人が書く文に近づけるエージェントスキルです。書いた文を後から直すだけでなく、AIが書く時から自然な日本語にします。設定に入れておけば、雑談の返事からメール、README、ESまで、最初に出てくる文から自然になります。
+nihongoは、AIが書く日本語を人が書く文に近づけるエージェントスキルです。
+
+- **Personal**：AIっぽさを消すだけでなく、あなたらしさも出せる機能
+- **Lite**：推敲だけでなく、生成時から適用できるモード
+- **Full**：メールからES、技術書・記事・資料まで、用途に合わせて書き分けるモード
+- **Full推敲**：すでにある文章を、意味を崩さず校正するモード
+
+どれも、依頼に無い理由・感想・約束は書かず、数字・日付・誰が何をするかは変えません。
 
 ## まず試す（Claude Code）
 
@@ -24,11 +31,12 @@ echo '@~/.claude/skills/nihongo/ALWAYS.md' >> ~/.claude/CLAUDE.md
 
 禁止語を並べるのではなく、読み手・場面・書き手から、その場の人ならどう書くかを判断します。
 
+- 自分の文を貼るだけで、LINEやメールなど自分の名前で出す文が自分の書き方になる（[やり方](#自分の書き方に合わせる)）
 - 最初から自然に書くので、あとで直す手間がいらない
-- 要らない読点を打たずに書く（今日は、駅で → 今日は駅で）
 - お知らせや目上への文は定型の敬語を残し、崩すのは友達とのやりとりだけにする
-- 依頼に無い感想・理由・約束は書き足さず、数字・日付・条件・誰が何をするかは変えない
+- 要らない読点を打たずに書く（今日は、駅で → 今日は駅で）
 - 自然な文は無理に直さない
+- 依頼に無い感想・理由・約束は書き足さず、数字・日付・条件・誰が何をするかは変えない
 
 ## 使用例
 
@@ -121,7 +129,16 @@ npx skills add AnIT012/nihongo -g
 
 ## 自分の書き方に合わせる
 
-`nihongo/references/personal-profile.md` に一人称や口ぐせ、避けたい言い回しを書いておくと、LINEやメールなど自分の名前で出す文がその書き方になります。
+自分が送ったLINEやメールを3〜5通貼って、「私の書き方を覚えて」と送ってください。一人称・文末・絵文字・敬語の高さなどをまとめた書き方メモができます。
+
+```
+これ、私が実際に送った文です。私の書き方を覚えて
+（ここに自分の文を貼る）
+```
+
+「これは友達へのLINE」「これは告知」のように場面を添えると、メモが場面ごとに分かれ、書く時は今の場面の書き方だけが使われます。
+
+できたメモを設定（Claude Codeなら `~/.claude/CLAUDE.md`、Codex・Museなら `AGENTS.md`、アプリならAIへの指示を書く欄）に貼ると、LINEやメールなど自分の名前で出す文がその書き方になります。AIとして話す返事には使いません。メモはスキルの外に置くので、スキルを更新しても消えません。貼る文の人名や連絡先は伏せておくと安心です。
 
 ## 評価
 
