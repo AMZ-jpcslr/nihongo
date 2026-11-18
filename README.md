@@ -5,7 +5,7 @@
 [![v2.2.0](https://img.shields.io/badge/-v2.2.0-D7261E?style=flat-square)](CHANGELOG.md)
 [![stars](https://img.shields.io/github/stars/AnIT012/nihongo?style=flat-square&labelColor=111111&color=D7261E)](https://github.com/AnIT012/nihongo/stargazers)
 [![license](https://img.shields.io/badge/license-MIT-D7261E?style=flat-square&labelColor=111111&color=D7261E)](LICENSE)
-[![works with](https://img.shields.io/badge/works_with-Claude_%7C_ChatGPT_%7C_Codex-D7261E?style=flat-square&labelColor=111111&color=D7261E)](#インストール)
+[![works with](https://img.shields.io/badge/works_with-Claude_%7C_ChatGPT_%7C_Codex_%7C_Muse-D7261E?style=flat-square&labelColor=111111&color=D7261E)](#インストール)
 
 実はこのREADME、nihongoを入れたAIが全部書いています。人の手では1文字も直していないので、AIっぽいと感じた所があったらIssueで教えてください！
 
@@ -18,7 +18,7 @@ npx skills add AnIT012/nihongo -g -a claude-code
 echo '@~/.claude/skills/nihongo/ALWAYS.md' >> ~/.claude/CLAUDE.md
 ```
 
-1行目でスキルを入れ、2行目で `CLAUDE.md` の最後に1行足して、Liteが毎回読み込まれるようにします。メールや資料を書く時はFullが自動で使われ、それ以外で使いたい時は「nihongoで直して」と頼むか `/nihongo` と送ります。更新は `npx skills update nihongo -g` です。Codex、Claude・ChatGPTのアプリでの入れ方は[インストール](#インストール)にあります。
+1行目でスキルを入れ、2行目で `CLAUDE.md` の最後に1行足して、Liteが毎回読み込まれるようにします。メールや資料を書く時はFullが自動で使われ、それ以外で使いたい時は「nihongoで直して」と頼むか `/nihongo` と送ります。更新は `npx skills update nihongo -g` です。Codex、Muse、Claude・ChatGPTのアプリでの入れ方は[インストール](#インストール)にあります。
 
 ## 特徴
 
@@ -70,10 +70,10 @@ nihongoには、普段の返事に毎回読み込む短いLiteと、詳しい手
 
 | | Lite | Full |
 |---|---|---|
-| ファイル | `nihongo/ALWAYS.md`（約1,600字） | `nihongo/SKILL.md` と `references/` |
+| ファイル | `nihongo/ALWAYS.md`（約2,300字） | `nihongo/SKILL.md` と `references/` |
 | 使う場面 | 普段の返事、雑談、短い質問まで毎回 | メール、お知らせ、ES、資料、README、UIの文言 |
 | 読み込まれ方 | 設定に入れておけば、毎回読み込まれる | 人に出す文章を書く時に、Liteの指示で自動で読まれる。名前を出して呼ぶこともできる |
-| 増えるトークン（目安） | 約1,200 | 約9,000 |
+| 増えるトークン（目安） | 約1,700 | 約9,000 |
 
 Liteを入れておくと、普段はLiteだけを使い、人に出す文章を書く時だけFullまで読みます。トークンを抑えながら、大事な文章では詳しい手順を使えます。
 
@@ -112,9 +112,10 @@ Claude Codeなら、`~/.claude/CLAUDE.md` に次の1行を足します。
 ほかの環境では、次の場所に `ALWAYS.md` の中身をそのまま貼ってください。どれも会話のたびに必ず読み込まれる場所です。
 
 - Codex：`~/.codex/AGENTS.md` か、プロジェクトの `AGENTS.md`
+- Muse：会話のたびに読み込まれる `AGENTS.md`
 - ClaudeやChatGPTのアプリ：設定にある、AIへの指示や好みを書く欄
 
-ほかのエージェント基盤でも、SKILL.md の形式のスキルに対応していれば、`nihongo/` フォルダをスキルの置き場にそのまま置くと使えることがあります。その場合も、Liteは会話のたびに読み込まれる指示ファイル（`AGENTS.md` など）に `ALWAYS.md` の中身を貼ってください。
+Museでは、スキルの置き場に `nihongo/` フォルダをそのまま置くと、スキルとして認識されたと報告をいただきました（Issue #15）。Museは `~/.claude/skills/` や `~/.agents/skills/` も読むので、上の `npx skills add` で入れたスキルもそのまま見えるはずです。ほかのエージェント基盤でも、SKILL.md の形式のスキルに対応していれば、同じようにフォルダを置くと使えることがあります。
 
 手元のファイルが何版かは、`ALWAYS.md` の1行目と、`SKILL.md` の先頭の `version` で確かめられます。
 
@@ -156,7 +157,9 @@ Pythonが使える環境では、推敲の最後に `nihongo/scripts/` のスク
 
 2.0.0では、雑談、LINE、短い質問、お礼のメール、自己PR、UIの文言、お知らせの15題で、Lite、Full、推敲用に作られた別のスキルの3つを目隠しで比べました。別のスキルに対して、Liteは13勝2敗、Fullは12勝3敗で、LiteとFullは8勝7敗のほぼ互角でした。依頼に無い理由・感想・約束などを足した作り話は、LiteとFullが3件ずつ、別のスキルが9件でした。スキルを使わない場合は、作り話が起きやすい11題で33件ありました。目隠しで比べた組は、これまでに約1,400組あります。
 
-検証に使ったモデルは、2.1.3の時点で、書き手がClaude Sonnet 5.5、判定がClaude Opus 5.5です。ChatGPTとCodexのモデルでは、まだ同じ検証をしていません。新しいモデルが出たら検証し直し、要らなくなった決まりは外していきます。
+2.2.0では、設定なし、プロフィールで口調などを指定した場合、`personal-profile.md` に書き込んだ場合の3つで、新しい10題を書かせました。長さは素のClaudeの約5〜7割で、300字の指定にはほぼ届き、プロフィールの指定と `personal-profile.md` の一人称が守られ、作り話はありませんでした。
+
+検証に使ったモデルは、2.2.0の時点で、書き手がClaude Sonnet 5.5、判定がClaude Opus 5.5です。ChatGPTとCodexのモデルでは、まだ同じ検証をしていません。新しいモデルが出たら検証し直し、要らなくなった決まりは外していきます。
 
 判定したのは作者1人か同じ会社のAIなので、数字は目安として見てください。ルールを足しては比べ、勝てなかった変更を捨ててきた記録と、課題の原文は [evaluations/](evaluations/) にあります。
 
@@ -170,7 +173,7 @@ Pythonが使える環境では、推敲の最後に `nihongo/scripts/` のスク
 
 ## 変更履歴
 
-- 2.2.0（2026-11-18）：AIの文で一番多い、短い語句の後の読点を減らしました。Fullは、書き終えた文から要らない読点をスクリプトで外します。READMEの先頭に、コピペで始められる手順を足しました。
+- 2.2.0（2026-11-18）：Liteは中身と量を残して言い方を整え、Fullは文章を組み立てる形に分け直し、字数の指定を守るようにしました。AIの文で一番多い、短い語句の後の読点も減らしました。Fullは、書き終えた文から要らない読点をスクリプトで外します。READMEの先頭に、コピペで始められる手順を足しました。
 - 2.1.4（2026-11-18）：伏字・削除・時刻変更など、依頼で頼まれた直しを戻してしまう所と、入れ替わった文を戻した時に誤った文が残る所を直しました。ファイルに版を書き、報告の形を決めました。
 - 2.1.3（2026-11-18）：いただいた報告をもとに、意味の崩れを照らすスクリプトの見落としと、頼まれた伏字を戻してしまう所を直しました。
 - 2.1.2（2026-11-18）：意味の崩れを照らすスクリプトで、入れ替わりの見落としと、頼まれた直しを戻してしまう所を直しました。
