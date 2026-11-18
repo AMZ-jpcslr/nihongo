@@ -93,5 +93,26 @@ class RedactedInsertionTests(unittest.TestCase):
         self.assertIn(SOURCE, actual)
 
 
+class DeletedOrRewordedContactTests(unittest.TestCase):
+    """Issue #18。行ごと消した連絡先や、言い換えて伏せた連絡先を差し込まない。"""
+
+    def test_deleted_line_is_not_reinserted(self):
+        source = SOURCE + "\n締め切りは15時です。\n"
+        draft = "締め切りは15時です。\n"
+        actual, log = revert(source, draft, "メールアドレスを含む行を削除してください。")
+        self.assertEqual(actual, draft)
+        self.assertIn("残っている候補", log)
+
+    def test_reworded_masked_sentence_is_not_reinserted(self):
+        draft = "お問い合わせ先は［非公開］です。\n"
+        actual, _ = revert(SOURCE + "\n", draft, "メールアドレスを伏せ、文章を自然にしてください。")
+        self.assertEqual(actual, draft)
+
+    def test_dropped_line_without_request_is_restored(self):
+        source = SOURCE + "\n締め切りは15時です。\n"
+        actual, _ = revert(source, "締め切りは15時です。\n", "文章を自然にしてください。")
+        self.assertIn("taro@example.invalid", actual)
+
+
 if __name__ == "__main__":
     unittest.main()

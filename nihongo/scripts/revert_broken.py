@@ -298,6 +298,14 @@ def requested_only(orig, draft, request):
     return not check(a, b) and sim(a, b) >= 0.6
 
 
+def has_requested_value(sent, request):
+    """文の中に、依頼で消す・伏せるよう頼まれた値（メールアドレスや電話番号）があるか。"""
+    if not request:
+        return False
+    n = norm(sent)
+    return any(value_ok(m.group(), n[max(0, m.start() - 12):m.start()], request) for m in VALUE.finditer(n))
+
+
 def requested_mask_exists(orig, drafts, request):
     """伏字以外が原文と一致する文（依頼で頼まれた直しだけの文）が、下書きに残っているか。"""
     if not request:
@@ -376,6 +384,10 @@ def one_pass(src, dst, request="", items=None):
                 continue
             # 伏字化して残っている文を、消えた文として原文のまま差し込まない。
             if requested_mask_exists(s[2], D, request):
+                continue
+            # 消す・伏せるよう頼まれた値を含む文は、原文のまま差し込まない（行ごと消した文、言い換えて伏せた文）。
+            # 戻さずに、残っている候補として見せる。
+            if has_requested_value(s[2], request):
                 continue
             k = S.index(s)
             if owner[k] in protected:
