@@ -114,7 +114,9 @@ EMAIL = r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+"
 PHONE = r"\+?[0-9０-９]{2,4}[-－‐][0-9０-９]{2,4}[-－‐][0-9０-９]{3,4}|[0-9０-９]{10,11}"
 VALUE = re.compile(EMAIL + "|" + PHONE)
 PHONE_MASK = r"[0-9０-９*＊●×]{2,4}[-－‐][0-9０-９*＊●×]{2,4}[-－‐][0-9０-９*＊●×]{3,4}"
-TOKEN = re.compile("|".join([PHONE_MASK, MASK.pattern, MASK_PLAIN, EMAIL, PHONE, NUM.pattern, r"[\s\S]"]))
+# 14:00 のようなコロンの時刻は、1つの値として扱う（14 と :00 に分けない）。
+CLOCK = r"[0-9０-９]{1,2}[:：][0-9０-９]{2}(?![0-9０-９])"
+TOKEN = re.compile("|".join([PHONE_MASK, MASK.pattern, MASK_PLAIN, EMAIL, PHONE, CLOCK, NUM.pattern, r"[\s\S]"]))
 AFTER_VALUE = re.compile(r"^(?:まで|宛て|宛|へ|に)")
 DELETE = re.compile(r"削除|消して|消す|外して|除いて|取り除")
 REDACT = re.compile(r"伏せ|伏字|非公開|マスク|隠|黒塗り")
@@ -178,6 +180,11 @@ def matches_target(value, label, clause):
     return value in clause or bool(label and label in clause)
 
 
+def unit_of(value):
+    """値の単位（13時 なら「時」、20名 なら「名」）。数字だけなら空。"""
+    return re.sub(r"[-−▲△0-9.,\s]", "", norm(value))[:1]
+
+
 def destination_in(value, clause):
     """変更先として書かれた値か（単に依頼に登場する値とは区別する）。"""
     return bool(re.search(re.escape(norm(value).strip()) + r'[」』”"\]]*\s*(?:に|へ)', clause))
@@ -215,6 +222,14 @@ def value_ok(value, before, request, operation=None, new=""):
             return True
         if operation is None and (deletion or masking or replacement):
             return True
+    # 「14:00に変更」のように項目名が無く、変更先の値だけが書かれた依頼。
+    # 同じ単位の値（時刻なら時刻）を、書かれた値に変えた時だけ認める。
+    if operation == "replace" and new.strip():
+        for c in clauses:
+            if not CHANGE.search(c) or KEEP.search(c) or re.match(r"(.+?)(?:を|は|が)", c.strip()):
+                continue
+            if destination_in(new, c) and unit_of(v) and unit_of(v) == unit_of(new):
+                return True
     return False
 
 
@@ -335,6 +350,10 @@ def one_pass(src, dst, request="", items=None):
 
     def put(i, sent):
         if i in replace or i in protected or sent in used:
+            return
+        # 戻した後も、消す・伏せるよう頼まれた値（メールアドレスや電話番号）が残るなら、自動では戻さない。
+        # 1文を2文に分けた時など、伏せた所を引き継げない時に起きる。残っている候補として見せる（Issue #23）。
+        if has_requested_value(keep_requested(sent, D[i][2], request), request):
             return
         # 原文の2文以上を1文にまとめた文なら、まとめた元の文を全部戻す（片方だけ戻して中身を落とさない）
         group = [s[2] for k, s in enumerate(S) if owner[k] == i and s[2] not in used]
