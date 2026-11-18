@@ -7,6 +7,10 @@
 [![license](https://img.shields.io/badge/license-MIT-D7261E?style=flat-square&labelColor=111111&color=D7261E)](LICENSE)
 [![works with](https://img.shields.io/badge/works_with-Claude_%7C_ChatGPT_%7C_Codex_%7C_Muse-D7261E?style=flat-square&labelColor=111111&color=D7261E)](#インストール)
 
+## 使ってはいけない用途
+
+詐欺、フィッシング、なりすまし、相手を騙すための文には使わないでください。ClaudeやChatGPTなど、各AIの利用規約でも禁止されています。
+
 実はこのREADME、nihongoを入れたAIが全部書いています。人の手では1文字も直していないので、AIっぽいと感じた所があったらIssueで教えてください！
 
 nihongoは、AIが書く日本語を人が書く文に近づけるエージェントスキルです。
@@ -160,10 +164,6 @@ npx skills add AnIT012/nihongo -g
 ## 注意事項
 
 AIが手順を読んで判断する作りなので、同じ依頼でも毎回同じ文になるとは限りません。数字や日付、固有名詞は送る前に自分の目で確認してください。
-
-## 使ってはいけない用途
-
-詐欺、フィッシング、なりすまし、相手を騙すための文には使わないでください。ClaudeやChatGPTなど、各AIの利用規約でも禁止されています。
 
 ## 制作について
 
