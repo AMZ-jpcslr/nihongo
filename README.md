@@ -7,7 +7,7 @@
 [![license](https://img.shields.io/badge/license-MIT-D7261E?style=flat-square&labelColor=111111&color=D7261E)](LICENSE)
 [![works with](https://img.shields.io/badge/works_with-Claude_%7C_ChatGPT_%7C_Codex_%7C_Muse-D7261E?style=flat-square&labelColor=111111&color=D7261E)](#インストール)
 
-## 使ってはいけない用途
+## 禁止用途
 
 詐欺、フィッシング、なりすまし、相手を騙すための文には使わないでください。ClaudeやChatGPTなど、各AIの利用規約でも禁止されています。
 
