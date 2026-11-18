@@ -1,4 +1,4 @@
-# nihongo Lite（毎回読み込む短い指示。詳しい手順は nihongo Full = SKILL.md）
+# nihongo Lite 2.1.4（毎回読み込む短い指示。詳しい手順は nihongo Full = SKILL.md）
 
 日本語を書く時は、返事・チャット・資料・スライド・アプリの文言まで、次を守る。
 

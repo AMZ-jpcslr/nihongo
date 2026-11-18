@@ -2,7 +2,7 @@
 
 # nihongo
 
-[![v2.1.3](https://img.shields.io/badge/-v2.1.3-D7261E?style=flat-square)](CHANGELOG.md)
+[![v2.1.4](https://img.shields.io/badge/-v2.1.4-D7261E?style=flat-square)](CHANGELOG.md)
 [![stars](https://img.shields.io/github/stars/AnIT012/nihongo?style=flat-square&labelColor=111111&color=D7261E)](https://github.com/AnIT012/nihongo/stargazers)
 [![license](https://img.shields.io/badge/license-MIT-D7261E?style=flat-square&labelColor=111111&color=D7261E)](LICENSE)
 [![works with](https://img.shields.io/badge/works_with-Claude_%7C_ChatGPT_%7C_Codex-D7261E?style=flat-square&labelColor=111111&color=D7261E)](#インストール)
@@ -104,6 +104,10 @@ Claude Codeなら、`~/.claude/CLAUDE.md` に次の1行を足します。
 - Codex：`~/.codex/AGENTS.md` か、プロジェクトの `AGENTS.md`
 - ClaudeやChatGPTのアプリ：設定にある、AIへの指示や好みを書く欄
 
+ほかのエージェント基盤でも、SKILL.md の形式のスキルに対応していれば、`nihongo/` フォルダをスキルの置き場にそのまま置くと使えることがあります。その場合も、Liteは会話のたびに読み込まれる指示ファイル（`AGENTS.md` など）に `ALWAYS.md` の中身を貼ってください。
+
+手元のファイルが何版かは、`ALWAYS.md` の1行目と、`SKILL.md` の先頭の `version` で確かめられます。
+
 ### Fullを呼び出す
 
 Liteを入れていれば、メールや資料を書く時は自動でFullが使われます。それ以外の場面で使いたい時は、「nihongoで直して」のように名前を出して頼むか、Claude Codeなら `/nihongo` と送ってください。
@@ -119,9 +123,10 @@ Pythonが使える環境では、推敲の最後に `nihongo/scripts/` のスク
 | `nihongo/references/` | 場面ごとの資料（会話、LINE・Slack、メール、お知らせ、UI文言、スライド、技術文書、ES、エッセイ、スピーチ、翻訳、敬語、表記、仕上げの点検など） |
 | `nihongo/references/personal-profile.md` | 自分の文体を書き込むひな形 |
 | `nihongo/scripts/` | 推敲の前後を比べて、数値・否定・確かさ・強さが変わった文や、担当・時刻が入れ替わった文だけを原文に戻すスクリプト（標準ライブラリだけで動く） |
-| `tests/` | スクリプトの回帰テスト（`python3 tests/test_scripts.py` と `python3 tests/test_numeric_and_fastpath.py`） |
+| `tests/` | スクリプトの回帰テスト（`for t in tests/test_*.py; do python3 $t; done` で全部を回せます） |
 | `evaluations/` | 検証の記録と、課題の原文 |
 | `CHANGELOG.md` | 変更履歴 |
+| `CONTRIBUTING.md` | 直した文の実例や不具合の送り方 |
 
 場面ごとの資料は、その場面の文章を書く時だけ読む作りなので、毎回すべてを読み込むわけではありません。
 
@@ -155,6 +160,7 @@ Pythonが使える環境では、推敲の最後に `nihongo/scripts/` のスク
 
 ## 変更履歴
 
+- 2.1.4（2026-11-18）：伏字・削除・時刻変更など、依頼で頼まれた直しを戻してしまう所と、入れ替わった文を戻した時に誤った文が残る所を直しました。ファイルに版を書き、報告の形を決めました。
 - 2.1.3（2026-11-18）：いただいた報告をもとに、意味の崩れを照らすスクリプトの見落としと、頼まれた伏字を戻してしまう所を直しました。
 - 2.1.2（2026-11-18）：意味の崩れを照らすスクリプトで、入れ替わりの見落としと、頼まれた直しを戻してしまう所を直しました。
 - 2.1.1（2026-11-18）：Liteの読点を1文に2つまでにして、短いメッセージにも、すぐ使える答えを1つは入れるようにしました。
