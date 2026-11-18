@@ -136,6 +136,26 @@ def keep_requested(orig, draft, request):
     return "".join(out)
 
 
+def requested_mask_exists(orig, drafts, request):
+    """伏字以外が原文と一致する文が、下書きに残っているか。"""
+    if not request:
+        return False
+    orig = orig.strip()
+    for _, _, draft in drafts:
+        draft = draft.strip()
+        masks = [m for m in MASK.finditer(draft) if allowed_new(m.group(), request)]
+        if not masks or orig == draft:
+            continue
+        changes = [
+            (b1, b2)
+            for op, _, _, b1, b2 in difflib.SequenceMatcher(None, orig, draft, autojunk=False).get_opcodes()
+            if op != "equal"
+        ]
+        if all(any(m.start() <= start and end <= m.end() for m in masks) for start, end in changes):
+            return True
+    return False
+
+
 def one_pass(src, dst, request=""):
     """候補を1つずつ見て、戻す文を決めて置き換える。戻した記録も返す。"""
     items = check(src, dst)
@@ -199,6 +219,9 @@ def one_pass(src, dst, request=""):
         elif kind == "gone":
             s = next((x for x in S if x[2].strip().startswith(ws[:20])), None)
             if s is None:
+                continue
+            # 伏字化して残っている文を、消えた文として原文のまま差し込まない。
+            if requested_mask_exists(s[2], D, request):
                 continue
             k = S.index(s)
             prev = best(S[k - 1][2], D)[0] if k > 0 else None
