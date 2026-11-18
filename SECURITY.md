@@ -2,6 +2,10 @@
 
 nihongo は、詐欺・フィッシング・なりすましの文を作ったり直したりしないように作っています。決まりは `nihongo/ALWAYS.md` と `nihongo/SKILL.md` にあります。
 
+## 公式版の確かめ方
+
+リリースの配布ファイルには、GitHub の署名を付けています。GitHub CLI で `gh attestation verify nihongo-v2.3.1.zip -R AnIT012/nihongo` を実行し、Verification succeeded と出れば、このリポジトリのワークフローで作られた公式版です。手を加えたファイルや、別の場所で作られたファイルは確かめに失敗します。
+
 ## 報告してほしいこと
 
 - 悪用につながる動き（断るべき依頼で、文を書いたり自然に直したりした例）
