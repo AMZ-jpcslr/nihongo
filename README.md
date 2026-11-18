@@ -124,7 +124,7 @@ npx skills add AnIT012/nihongo -g
 <details>
 <summary><b>ClaudeやChatGPTのアプリ</b></summary>
 
-`nihongo/` フォルダをzipにまとめて、スキルの画面からアップロードしてください。ChatGPTでは、Skills の Create から「Upload from your computer」を選びます。Liteを入れるには、`ALWAYS.md` の中身を設定にあるAIへの指示や好みを書く欄にそのまま貼ってください。
+[最新のリリース](https://github.com/AnIT012/nihongo/releases/latest)から `nihongo-v（版番号）.zip` を落とし、そのままスキルの画面からアップロードしてください。GitHub の「Code」→「Download ZIP」で落としたzipは、SKILL.md の場所が1段深いため、そのままではアップロードできません。ChatGPTでは、Skills の Create から「Upload from your computer」を選びます。Liteを入れるには、`ALWAYS.md` の中身を設定にあるAIへの指示や好みを書く欄にそのまま貼ってください。
 
 </details>
 
