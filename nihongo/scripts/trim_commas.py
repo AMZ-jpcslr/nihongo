@@ -62,11 +62,38 @@ MARK_HEAD, MARK_BODY = "\ue000", "\ue001"
 MARK = re.compile(MARK_HEAD + MARK_BODY + "*")
 
 
+FENCE_OPEN = re.compile(r"^[ \t]{0,3}(`{3,}|~{3,})(.*)$")
+
+
+def split_fences(text):
+    """コードブロック（``` と ~~~ の囲み）とそれ以外に分ける。(コードか, 文字列) の並びを返す。
+    閉じる囲みは、開いた時と同じ記号を同じ数以上並べた行。閉じていなければ最後までコード。"""
+    parts, buf, fence = [], [], None
+    for line in text.splitlines(keepends=True):
+        body = line.rstrip("\r\n")
+        if fence is None:
+            m = FENCE_OPEN.match(body)
+            # ``` の後ろの説明にバッククォートがあるのは、囲みではなくインラインのコード
+            if m and not (m.group(1)[0] == "`" and "`" in m.group(2)):
+                if buf:
+                    parts.append((False, "".join(buf)))
+                buf, fence = [line], m.group(1)
+                continue
+            buf.append(line)
+        else:
+            buf.append(line)
+            if re.fullmatch(r"[ \t]{0,3}" + re.escape(fence[0]) + "{" + str(len(fence)) + r",}[ \t]*", body):
+                parts.append((True, "".join(buf)))
+                buf, fence = [], None
+    if buf:
+        parts.append((fence is not None, "".join(buf)))
+    return parts
+
+
 def trim(text):
     out, log = [], []
-    parts = re.split(r"(```.*?```)", text, flags=re.S)
-    for k, part in enumerate(parts):
-        if k % 2 == 1:
+    for is_code, part in split_fences(text):
+        if is_code:
             out.append(part)
             continue
         lines = part.split("\n")
