@@ -11,6 +11,9 @@ on:
 
 permissions:
   contents: write
+  # 配布ファイルに GitHub の署名（artifact attestation）を付けるため
+  id-token: write
+  attestations: write
 
 jobs:
   release:
@@ -53,6 +56,13 @@ jobs:
           (cd dist && sha256sum ./*.zip ./*.tar.gz | sed 's# \./# #' > SHA256SUMS.txt)
           cat dist/SHA256SUMS.txt
 
+      - name: 配布ファイルに署名する
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            dist/*.zip
+            dist/*.tar.gz
+
       - name: リリースの本文を作る
         run: |
           set -euo pipefail
@@ -63,6 +73,14 @@ jobs:
             echo
             echo '```'
             cat dist/SHA256SUMS.txt
+            echo '```'
+            echo
+            echo "## 公式版の確かめ方"
+            echo
+            echo "配布ファイルには GitHub の署名を付けています。GitHub CLI で次を実行し、Verification succeeded と出れば、このリポジトリのワークフローで作られた公式版です。"
+            echo
+            echo '```'
+            echo "gh attestation verify nihongo-v$VERSION.zip -R AnIT012/nihongo"
             echo '```'
           } >> notes.md
           cat notes.md

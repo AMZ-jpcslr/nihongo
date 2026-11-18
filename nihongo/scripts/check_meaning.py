@@ -47,6 +47,25 @@ NUM = re.compile(
     r"人|名|個|行|文字|字|歳|才|枚|台|本|杯|冊|部|点|倍|割|階|番|位|°C|度|℃|"
     r"TB|MB|GB|KB|ms|px|mg|kg|km|cm|mm|ml|mL|g|m|L|t)(?![A-Za-z]))?"
 )
+# 発信者・組織の名前と、公式らしさを出す言葉。原文に無いのに増えたら出す（なりすましや、書いていない権威の足し）。
+ORG_SUFFIX = (r"銀行|信用金庫|信金|証券|生命|保険|株式会社|有限会社|市役所|区役所|町役場|村役場|役所|役場|税務署|警察署|警察|"
+              r"年金機構|運営事務局|事務局|サポートセンター|カスタマーセンター|カスタマーサポート|サポート窓口|"
+              r"省(?![一-龥々])|庁(?![一-龥々])")
+ORG = re.compile(r"(?:株式会社|\(株\))[一-龥々ァ-ヴーA-Za-z0-9]{1,10}|[一-龥々ァ-ヴーA-Za-z0-9]{1,10}?(?:" + ORG_SUFFIX + r")")
+ORG_GENERIC = {"各", "他", "当", "同", "全", "本", "都市", "地方", "主要", "大手", "一部", "ネット", "外資", "最寄り"}
+AUTHORITY = ["公式", "正規", "認証済", "【重要】", "【緊急】", "重要なお知らせ", "緊急", "法的措置", "凍結", "利用停止", "アカウント停止"]
+
+
+def orgs(text):
+    out = Counter()
+    for m in ORG.finditer(text):
+        w = m.group(0)
+        head = re.sub("(?:" + ORG_SUFFIX + ")$", "", w)
+        if head and head not in ORG_GENERIC:
+            out[w] += 1
+    return out
+
+
 WEEK = re.compile(r"[月火水木金土日]曜日?|[（(][月火水木金土日][）)]")
 CODE = re.compile(r"`[^`\n]+`")
 URL = re.compile(r"https?://\S+")
@@ -153,6 +172,17 @@ def check(src, dst):
             out.append(f"[{name}] 原文にあって直した文で減ったもの: {', '.join(lost)}")
         if added:
             out.append(f"[{name}] 直した文で増えたもの: {', '.join(added)}")
+
+    oa, ob = orgs(a), orgs(b)
+    added_org = [x for x in ob if ob[x] > oa[x] and not any(x in y or y in x for y in oa)]
+    lost_org = [x for x in oa if oa[x] > ob[x] and not any(x in y or y in x for y in ob)]
+    if added_org:
+        out.append(f"[発信者・権威] 原文に無い発信者名・組織名が増えた: {', '.join(added_org)}")
+    if lost_org:
+        out.append(f"[発信者・権威] 原文の発信者名・組織名が消えた: {', '.join(lost_org)}")
+    added_auth = [w for w in AUTHORITY if b.count(w) > a.count(w)]
+    if added_auth:
+        out.append(f"[発信者・権威] 原文に無い公式らしさの言葉が増えた: {', '.join(added_auth)}")
 
     ma, mb = count_markers(a, MODALITY), count_markers(b, MODALITY)
     for k in MODALITY:
