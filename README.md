@@ -124,13 +124,18 @@ npx skills add AnIT012/nihongo -g
 <details>
 <summary><b>ClaudeやChatGPTのアプリ</b></summary>
 
-`nihongo/` フォルダをzipにまとめて、スキルの画面からアップロードしてください。ChatGPTでは、Skills の Create から「Upload from your computer」を選びます。Liteを入れるには、`ALWAYS.md` の中身を設定にあるAIへの指示や好みを書く欄にそのまま貼ってください。
+[最新のリリース](https://github.com/AnIT012/nihongo/releases/latest)から `nihongo-v（版番号）.zip` を落とし、そのままスキルの画面からアップロードしてください。GitHub の「Code」→「Download ZIP」で落としたzipは、SKILL.md の場所が1段深いため、そのままではアップロードできません。ChatGPTでは、Skills の Create から「Upload from your computer」を選びます。Liteを入れるには、`ALWAYS.md` の中身を設定にあるAIへの指示や好みを書く欄にそのまま貼ってください。
 
 </details>
 
 ### 使い方と更新
 
 メールや資料を書く時はFullが自動で使われます。ほかの場面では「nihongoで直して」と頼むか、Claude Codeなら `/nihongo` と送ってください。更新は `npx skills update nihongo -g` です。
+
+### 会話の途中から使う
+
+- Claude Code：スキルを入れると、再起動しなくても今の会話で使えます。会話を始めた時に `~/.claude/skills/` が無かった場合は、先に `/reload-skills` を実行してください。Liteをその場で効かせたい時は、`@~/.claude/skills/nihongo/ALWAYS.md` をメッセージに書いて読み込ませます。
+- Claudeのアプリ：「nihongoのスキルを使って」と名前を出して頼むと、使われやすくなります。途中の会話で効かない時は、新しい会話で始めてください。
 
 ## 自分の書き方に合わせる
 
