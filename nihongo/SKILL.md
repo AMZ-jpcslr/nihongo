@@ -140,6 +140,7 @@ metadata:
 - エッセイ・感想・ブログの導入・宣伝文・紹介文 → `references/essays-and-promotion.md`
 - スピーチ・発表・動画の読み上げ原稿 → `references/speech.md`
 - 英語等からの翻訳 → `references/translation.md`
+- ポートフォリオ・報告書・README・ES・会社やお店から出す文（書き言葉の段） → `references/register.md`
 
 横断の資料：
 - 自分の名前で出す文章、本人の言い回しの好み → 設定（CLAUDE.md・AGENTS.md・アプリの設定）にある「私の書き方」と `references/personal-profile.md`（両方あれば設定の方を優先する）
