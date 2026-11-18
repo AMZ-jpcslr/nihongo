@@ -50,7 +50,22 @@ def main():
     if "print('a、b')" not in out or "資料を明日送ります。" not in out:
         bad += 1
         print("NG: コードブロックの扱い")
-    total = len(CASES) + 4
+    # インラインコード・URLで文を切らない。直前の読点は残す（2.2.1）
+    inline = [
+        ("設定では、`config.yaml` の値を読み込んでから処理を始めるので、時間がかかります。",
+         "設定では、`config.yaml` の値を読み込んでから処理を始めるので、時間がかかります。"),
+        ("手順では、`npm install` を実行します。", "手順では、`npm install` を実行します。"),
+        ("詳しくは、https://example.com を見てください。", "詳しくは、https://example.com を見てください。"),
+        ("資料を、`out.md` に書きます。", "資料を、`out.md` に書きます。"),
+        ("値は`a。b`です。次は、これだ。", "値は`a。b`です。次はこれだ。"),
+        ("`print('a、b')` を、明日送ります。", "`print('a、b')` を明日送ります。"),
+    ]
+    for src, want in inline:
+        got, _ = trim(src)
+        if got != want:
+            bad += 1
+            print(f"NG: インラインコード・URL：{src} → {got}")
+    total = len(CASES) + 4 + len(inline)
     print(f"{total - bad}/{total} OK")
     sys.exit(1 if bad else 0)
 

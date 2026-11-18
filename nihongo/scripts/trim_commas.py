@@ -8,7 +8,7 @@
 - 「を」の直後の読点（資料を、明日送ります）
 
 外さないもの：定型の前置き（お手数ですが、）、文頭の接続詞（ただ、）、「Aは〜、Bは〜」の並び、
-「無料で、広告も」のような2つの文のつなぎ、コードブロック・インラインコード・URLの中。
+「無料で、広告も」のような2つの文のつなぎ、コードブロック・インラインコード・URLの中と、その直前の読点。
 スピーチや読み上げの原稿は、読点が息継ぎの印になるので使わない。
 外した読点は、標準出力に1行ずつ出す。
 """
@@ -35,6 +35,8 @@ def trim_sentence(s):
     for i in marks:
         before = body[:i]
         after = body[i + 1:]
+        if after.lstrip().startswith(MARK_HEAD):
+            continue  # コードやURLの直前の読点は、日本語との境目の印なので残す
         if before.endswith("を"):
             drop.append((i, "「を」の後"))
             continue
@@ -53,9 +55,16 @@ def trim_sentence(s):
     return body, [r for _, r in drop]
 
 
+# インラインコードとURLは、同じ長さの印に置き換えてから文に切る。
+# 印で置き換えると、コードの前後で文が切れず、中の「。」「!」で文を切ることもない。
+INLINE = re.compile(r"`[^`\n]*`|https?://[^\s、。）)」]+")
+MARK_HEAD, MARK_BODY = "\ue000", "\ue001"
+MARK = re.compile(MARK_HEAD + MARK_BODY + "*")
+
+
 def trim(text):
     out, log = [], []
-    parts = re.split(r"(```.*?```|`[^`\n]*`|https?://\S+)", text, flags=re.S)
+    parts = re.split(r"(```.*?```)", text, flags=re.S)
     for k, part in enumerate(parts):
         if k % 2 == 1:
             out.append(part)
@@ -63,15 +72,19 @@ def trim(text):
         lines = part.split("\n")
         new_lines = []
         for line in lines:
-            pieces = re.split(r"(?<=[。！？!?])", line)
+            kept = INLINE.findall(line)
+            masked = INLINE.sub(lambda m: MARK_HEAD + MARK_BODY * (len(m.group()) - 1), line)
+            pieces = re.split(r"(?<=[。！？!?])", masked)
             new_pieces = []
             for p in pieces:
                 head = re.match(r"^(\s*(?:#+|[-*・]|\d+[.)]|>)?\s*)", p).group(1)
                 body, why = trim_sentence(p[len(head):])
                 if why:
-                    log.append(f"外した（{'・'.join(why)}）：{p.strip()[:50]}")
+                    shown = MARK.sub("…", p.strip())
+                    log.append(f"外した（{'・'.join(why)}）：{shown[:50]}")
                 new_pieces.append(head + body)
-            new_lines.append("".join(new_pieces))
+            restored = iter(kept)
+            new_lines.append(MARK.sub(lambda m: next(restored), "".join(new_pieces)))
         out.append("\n".join(new_lines))
     return "".join(out), log
 
