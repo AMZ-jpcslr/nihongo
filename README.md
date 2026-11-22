@@ -2,7 +2,7 @@
 
 # nihongo
 
-[![v2.3.1](https://img.shields.io/badge/-v2.3.1-D7261E?style=flat-square)](CHANGELOG.md)
+[![v2.3.2](https://img.shields.io/badge/-v2.3.2-D7261E?style=flat-square)](CHANGELOG.md)
 [![stars](https://img.shields.io/github/stars/AnIT012/nihongo?style=flat-square&labelColor=111111&color=D7261E)](https://github.com/AnIT012/nihongo/stargazers)
 [![license](https://img.shields.io/badge/license-MIT-D7261E?style=flat-square&labelColor=111111&color=D7261E)](LICENSE)
 [![works with](https://img.shields.io/badge/works_with-Claude_%7C_ChatGPT_%7C_Codex_%7C_Muse-D7261E?style=flat-square&labelColor=111111&color=D7261E)](#インストール)
