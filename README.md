@@ -2,10 +2,10 @@
 
 # nihongo
 
-[![v2.3.2](https://img.shields.io/badge/-v2.3.2-D7261E?style=flat-square)](CHANGELOG.md)
+[![v3.0.0](https://img.shields.io/badge/-v3.0.0-D7261E?style=flat-square)](CHANGELOG.md)
 [![stars](https://img.shields.io/github/stars/AnIT012/nihongo?style=flat-square&labelColor=111111&color=D7261E)](https://github.com/AnIT012/nihongo/stargazers)
 [![license](https://img.shields.io/badge/license-MIT-D7261E?style=flat-square&labelColor=111111&color=D7261E)](LICENSE)
-[![works with](https://img.shields.io/badge/works_with-Claude_%7C_ChatGPT_%7C_Codex_%7C_Muse-D7261E?style=flat-square&labelColor=111111&color=D7261E)](#インストール)
+[![works with](https://img.shields.io/badge/works_with-Claude_%7C_Antigravity_%7C_Codex_%7C_Cursor_%7C_ChatGPT_%7C_Muse-D7261E?style=flat-square&labelColor=111111&color=D7261E)](#インストール)
 
 ## 禁止用途
 
@@ -15,35 +15,38 @@ nihongoは、読み手を騙さないことを大事にしています。依頼�
 
 ## nihongoとは
 
-実はこのREADME、nihongoを入れたAIが全部書いています。人の手では1文字も直していないので、AIっぽいと感じた所があったらIssueで教えてください！
+### nihongo — AI編集のための日本語ガード
 
-nihongoは、AIが書く日本語を人が書く文に近づけるエージェントスキルです。
+「上出来だけど、そのままでは出せない」をなくす。AI編集の仕上げと確認をまとめて引き受けます。
 
-- **Personal**：AIっぽさを消すだけでなく、あなたらしさも出せる機能
-- **Lite**：推敲だけでなく、生成時から適用できるモード
-- **Full**：メールからES、技術書・記事・資料まで、用途に合わせて書き分けるモード
-- **Full推敲**：すでにある文章を、意味を崩さず校正するモード
+AIが書いた日本語は一見きれいに見えても、敬語が1段高すぎたり、頼んでいない約束が混ざったり、推敲の拍子に日時や「必ず」が落ちたりします。nihongo v3.0 は、**入れた初日はまず誰でも困りやすい一般的なズレを減らし、使い続けるうちに自分の書き方や避けたい表現を1行ずつ覚えて、手直しを減らしていく**仕組みです。次の3つで仕上げと確認を分担します。
+
+- **軽量スキル（Lite / Full）**：普段のやりとりは短いLite（約1,200字）で、メール・資料・技術文書はFull（約93行＋21本の詳細資料）で書き分けます。依頼に無い事実や約束を足さず、相手と場面に合う日本語に整えます。
+- **会話で育つ Personal**：`~/.nihongo/profile.md` に自分の書き方を4つの箱（`[common]` / `[casual]` / `[work]` / `[formal]`）と「絶対に言わない表現」に分けて保存します。会話で直した癖だけを1行確認してから追記し、裏で勝手に書き換えることはありません。
+- **0トークン自動チェッカー（`nihongo-check`）**：Python 3.10+ の標準ライブラリだけで動くCLIです。原文と編集後の文を比べ、日時・数字・否定・条件・求める強さ（「必ず」など）のズレや、避けたい表現の混入など**見直す候補**を0トークンで見つけます。Claude Code の Hook や GitHub Actions にもそのまま組み込めます。
 
 ## まず試す（Claude Code）
 
-```
+```bash
 npx skills add AnIT012/nihongo -g -a claude-code
 echo '@~/.claude/skills/nihongo/ALWAYS.md' >> ~/.claude/CLAUDE.md
 ```
 
-1行目でスキルを入れ、2行目でLiteが毎回読み込まれるようにします。ほかの環境での入れ方は[インストール](#インストール)にあります。
+1行目でスキルを入れ、2行目でLiteが毎回読み込まれるようにします。自動チェッカーやほかの環境での入れ方は[インストール](#インストール)にあります。
 
 ## 特徴
 
 禁止語を並べるのではなく、読み手・場面・書き手から、その場の人ならどう書くかを判断します。
 
-- 自分の文を貼るだけで、LINEやメールなど自分の名前で出す文が自分の書き方になる（[やり方](#自分の書き方に合わせる)）
-- お知らせや目上への文は定型の敬語を残し、崩すのは友達とのやりとりだけにする
+- 依頼に無い感想・理由・約束は書き足さず、数字・日付・条件・誰が何をするかは変えない
+- お知らせや目上への文は定型の敬語を残し、くだけた癖（`[casual]`）はフォーマルな場面（`[formal]`）に持ち込まない
 - 要らない読点を打たずに書く（今日は、駅で → 今日は駅で）
 - 自然な文は無理に直さない
-- 依頼に無い感想・理由・約束は書き足さず、数字・日付・条件・誰が何をするかは変えない
+- 編集後の確認はAIに頼み直さず、0トークンの `nihongo-check` で意味のズレを機械的に検出し、必要に応じて原文へ戻せる
 
 ## 使用例
+
+### 1. Slackの投稿を整える（スキル）
 
 AIが書いたSlackの投稿です。
 
@@ -76,16 +79,68 @@ nihongoで直すと、こうなりました。
 
 「結論：」「背景：」のようなラベルを外し、社内のチャットには重すぎる「させていただきます」「いただけますと幸いです」をチームに向けた普通の言い方にしています。日時やお願いの中身は変えていません。
 
+### 2. AI編集後の意味ズレを0トークンで止める（`nihongo-check git --hook`）
+
+たとえば `docs/release.md` の原文にあった「15時までに必ず確認してください。」が、AIによる文章整理で「16時までに確認してください。」に変わったとします。
+
+[examples/hooks/claude-code-hook.json](examples/hooks/claude-code-hook.json) を設定しておくと、ファイルの編集直後に0トークンで `nihongo-check git --hook` が走り、ズレがあれば終了コード `2` で止めて該当箇所を返します。
+
+```text
+nihongo-check: 意味が変わった可能性がある箇所を検出しました（base: HEAD）
+[docs/release.md] (4件)
+- [数値・日時] 削除（原文のみ）: 15時
+- [数値・日時] 追加（編集後のみ）: 16時
+- [確度・必須度] 「必須」表現が減少（1→0）
+- [程度・約束] 「必ず」が減少（1→0）
+原文と読み比べ、意図しない変更があれば元に戻してください。
+```
+
+AIのトークンを使わずに、時刻の書き換わりや「必ず」の脱落をその場で拾えます。
+
+### 3. 会話で育つ Personal（`~/.nihongo/profile.md`）
+
+自分の名前で出す文（LINE・Slack・メール・SNSなど）を自分の書き方に寄せる機能です。設定ファイルはホーム配下の `~/.nihongo/profile.md` に置き、4つの箱と「絶対に言わない表現」に分けて管理します。
+
+```markdown
+## [common]
+- 結論を1文目に書く
+- 絶対に言わない表現：〜させていただきます / ご査収のほど
+
+## [casual]
+- 一人称：僕
+- 友達への返事は短めに返す
+
+## [work]
+- 了解の返事は「了解です」にする
+
+## [formal]
+- 一人称：私
+- 先生・社外向けは標準的な敬語を保つ
+```
+
+会話の中でユーザーが言い回しを直した時だけ、AIが返答の末尾で1行確認します。
+
+```text
+今後 `[work]` に「了解の返事は『了解です』にする」を追記しておきますか？
+```
+
+- 裏で勝手に書き込むことはせず、本人がOKした内容だけを追記します
+- ファイルは普通のMarkdownなので、いつでも中身を見たり消したりできます
+- `[casual]` の癖は `[formal]` には持ち込みません
+- 個人情報や固有名詞（人名・社名・連絡先など）は書きません
+- これまでどおり、自分が送った文を3〜5通貼って「私の書き方を覚えて」と頼み、まとめて作ることもできます
+- `nihongo-check` に `--profile ~/.nihongo/profile.md`（フォーマル文書なら `--scene formal` も追加）を渡せば、「絶対に言わない表現」の混入も0トークンで検出できます
+
 ## LiteとFull
 
-nihongoには、毎回読み込む短いLiteと、詳しい手順が入ったFullがあります。両方入れておけば、普段はLiteだけを使い、人に出す文章を書く時だけFullまで読みます。
+nihongoには、毎回読み込む短いLiteと、詳しい手順が入ったFullがあります。両方入れておけば、普段はLiteだけを使い、人に出す文章を書く時だけFullまで読みます。v3.0ではLite・Fullともにv2.3.2から半分以下に軽量化しました。
 
 | | Lite | Full |
 |---|---|---|
-| ファイル | `nihongo/ALWAYS.md` | `nihongo/SKILL.md` と `references/` |
+| ファイル | `nihongo/ALWAYS.md` | `nihongo/SKILL.md` と `references/`（21本） |
 | 使う場面 | 普段の返事、雑談、短い質問 | メール、お知らせ、ES、資料、README、UIの文言 |
 | 読み込まれ方 | 設定に入れておけば毎回 | 人に出す文章を書く時に自動で。名前を出して呼ぶこともできる |
-| 増えるトークン（目安） | 約2,500 | 約10,000（使う時だけ） |
+| サイズ（目安） | 約1,200字（v2.3.2 の 2,704字から約55%軽量化） | 約93行・約5,675字（v2.3.2 の 275行・12,819字から約56%軽量化。該当する `references/` のみ追加読み込み） |
 
 ## インストール
 
@@ -94,7 +149,7 @@ nihongoには、毎回読み込む短いLiteと、詳しい手順が入ったFul
 <details>
 <summary><b>Claude Code</b></summary>
 
-```
+```bash
 npx skills add AnIT012/nihongo -g -a claude-code
 echo '@~/.claude/skills/nihongo/ALWAYS.md' >> ~/.claude/CLAUDE.md
 ```
@@ -104,13 +159,39 @@ echo '@~/.claude/skills/nihongo/ALWAYS.md' >> ~/.claude/CLAUDE.md
 </details>
 
 <details>
+<summary><b>Antigravity</b></summary>
+
+[最新のリリース](https://github.com/AnIT012/nihongo/releases/latest)から `nihongo-v3.0.0.zip` を落として展開するか、このリポジトリの `nihongo/` フォルダを `~/.gemini/config/skills/nihongo/` に配置します。
+
+```bash
+git clone --depth 1 --branch v3.0.0 https://github.com/AnIT012/nihongo.git /tmp/nihongo-src
+mkdir -p ~/.gemini/config/skills
+cp -r /tmp/nihongo-src/nihongo ~/.gemini/config/skills/nihongo
+```
+
+Windows（PowerShell）では、同じように `nihongo` フォルダを `%USERPROFILE%\.gemini\config\skills\nihongo\` に置きます。Liteを毎回効かせたい場合は、`ALWAYS.md` の内容をユーザー共通ルールに入れてください。
+
+</details>
+
+<details>
 <summary><b>Codex</b></summary>
 
-```
+```bash
 npx skills add AnIT012/nihongo -g
 ```
 
 入れ先を聞かれたら Codex を選びます。Liteを入れるには、`ALWAYS.md` の中身を `~/.codex/AGENTS.md` かプロジェクトの `AGENTS.md` にそのまま貼ってください。
+
+</details>
+
+<details>
+<summary><b>Cursor</b></summary>
+
+```bash
+npx skills add AnIT012/nihongo -g
+```
+
+入れ先を聞かれたら Cursor を選びます。Liteを毎回効かせるには、`ALWAYS.md` の中身を Cursor の User Rules、またはプロジェクトの `.cursor/rules/nihongo.mdc`（`alwaysApply: true`）に貼ってください。
 
 </details>
 
@@ -122,9 +203,9 @@ npx skills add AnIT012/nihongo -g
 </details>
 
 <details>
-<summary><b>ClaudeやChatGPTのアプリ</b></summary>
+<summary><b>Claude / ChatGPT アプリ</b></summary>
 
-[最新のリリース](https://github.com/AnIT012/nihongo/releases/latest)から `nihongo-v（版番号）.zip` を落とし、そのままスキルの画面からアップロードしてください。GitHub の「Code」→「Download ZIP」で落としたzipは、SKILL.md の場所が1段深いため、そのままではアップロードできません。ChatGPTでは、Skills の Create から「Upload from your computer」を選びます。Liteを入れるには、`ALWAYS.md` の中身を設定にあるAIへの指示や好みを書く欄にそのまま貼ってください。
+[最新のリリース](https://github.com/AnIT012/nihongo/releases/latest)から `nihongo-v（版番号）.zip` を落とし、そのままスキルの画面からアップロードしてください。GitHub の「Code」→「Download ZIP」で落としたzipは、`SKILL.md` の場所が1段深いため、そのままではアップロードできません。ChatGPTでは、Skills の Create から「Upload from your computer」を選びます。Liteを入れるには、`ALWAYS.md` の中身を設定にあるAIへの指示や好みを書く欄にそのまま貼ってください。
 
 </details>
 
@@ -134,27 +215,35 @@ npx skills add AnIT012/nihongo -g
 
 ### 会話の途中から使う
 
-- Claude Code：スキルを入れると、再起動しなくても今の会話で使えます。会話を始めた時に `~/.claude/skills/` が無かった場合は、先に `/reload-skills` を実行してください。Liteをその場で効かせたい時は、`@~/.claude/skills/nihongo/ALWAYS.md` をメッセージに書いて読み込ませます。
-- Claudeのアプリ：「nihongoのスキルを使って」と名前を出して頼むと、使われやすくなります。途中の会話で効かない時は、新しい会話で始めてください。
+- **Claude Code**：スキルを入れると、再起動しなくても今の会話で使えます。会話を始めた時に `~/.claude/skills/` が無かった場合は、先に `/reload-skills` を実行してください。Liteをその場で効かせたい時は、`@~/.claude/skills/nihongo/ALWAYS.md` をメッセージに書いて読み込ませます。
+- **Claudeのアプリ**：「nihongoのスキルを使って」と名前を出して頼むと、使われやすくなります。途中の会話で効かない時は、新しい会話で始めてください。
 
-## 自分の書き方に合わせる
+### 自動チェッカー（`nihongo-check` / Hook / GitHub Actions）
 
-自分が送ったLINEやメールを3〜5通貼って、「私の書き方を覚えて」と送ってください。一人称・文末・絵文字・敬語の高さなどをまとめた書き方メモができます。
+Python 3.10+ の標準ライブラリだけで動き、追加の依存パッケージは要りません。
 
+```bash
+pip install "git+https://github.com/AnIT012/nihongo.git@v3.0.0"
 ```
-これ、私が実際に送った文です。私の書き方を覚えて
-（ここに自分の文を貼る）
-```
 
-「これは友達へのLINE」「これは告知」のように場面を添えると、メモが場面ごとに分かれ、書く時は今の場面の書き方だけが使われます。
+pip で入れると `nihongo-check` コマンド（`nihongo_check` 名前空間）が使えるようになります。インストールせずに、スキル内の `python3 nihongo/scripts/cli.py` をそのまま実行することもできます。
 
-できたメモを設定（Claude Codeなら `~/.claude/CLAUDE.md`、Codex・Museなら `AGENTS.md`、アプリならAIへの指示を書く欄）に貼ると、LINEやメールなど自分の名前で出す文がその書き方になります。AIとして話す返事には使いません。メモはスキルの外に置くので、スキルを更新しても消えません。貼る文の人名や連絡先は伏せておくと安心です。
+| コマンド | できること |
+|---|---|
+| `nihongo-check diff <orig> <draft> [--request <req>] [--profile <path>] [--scene formal] [--json]` | 原文と直した文を比べ、意味のズレやプロフィール違反の候補を出す |
+| `nihongo-check fix <orig> <draft> <out> [--request <req>] [--no-trim-commas] [--fail-on-remaining]` | 意味が変わった文を原文に戻し、要らない読点を外す |
+| `nihongo-check git [--base HEAD] [--staged] [--ext .md,.txt] [--request <req>] [--profile <path>] [--scene formal] [--hook] [--json]` | git の変更差分（Markdown・テキスト）をまとめて確認する |
+
+そのまま使える設定例を `examples/hooks/` に置いています。
+
+- **Claude Code Hook**：[examples/hooks/claude-code-hook.json](examples/hooks/claude-code-hook.json) — `PostToolUse`（`Edit|Write`）で0トークン実行し、意味のズレ候補があれば終了コード `2` で通知します。
+- **GitHub Actions**：[examples/hooks/github-actions-docs-check.yml](examples/hooks/github-actions-docs-check.yml) — PR で変更した Markdown ファイルに意図しない意味のズレがないか自動で確かめます。
 
 ## 評価
 
-2.2.0を推敲用に作られた別のスキル（最新版）と同じ10題で比べた結果です。判定は別のAIが目隠しで行い、依頼どおりかを最優先に見ました。
+v2.2.0 時点の基準結果です（v3.0.0 での再計測は未実施）。推敲用に作られた別のスキル（当時最新版）と同じ10題で比べ、別のAIが目隠しで判定しました。依頼どおりかを最優先に見ています。
 
-| 見た点 | 結果 |
+| 見た点 | 結果（v2.2.0） |
 |---|---|
 | 依頼どおりか（頼んだ中身がそろい、本人の経験や約束を作っていないか） | 2回の審査とも、LiteとFullの両方でnihongoが勝ち越し |
 | 依頼に無い事実を作った案 | nihongoは0件。作ったのは別のスキルだけ |
@@ -169,7 +258,7 @@ npx skills add AnIT012/nihongo -g
 
 ## 注意事項
 
-AIが手順を読んで判断する作りなので、同じ依頼でも毎回同じ文になるとは限りません。数字や日付、固有名詞は送る前に自分の目で確認してください。
+スキル部分はAIが手順を読んで判断する作りなので、同じ依頼でも毎回同じ文になるとは限りません。`nihongo-check` の検出結果も「見直す候補」を出すものであり、最終的な数字・日付・固有名詞は送る前に自分の目で確認してください。
 
 ## 制作について
 

@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/skills/nihongo/scripts/cli.py git --hook"
+          }
+        ]
+      }
+    ]
+  }
+}

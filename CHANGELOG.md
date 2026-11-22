@@ -1,5 +1,30 @@
 # 変更履歴
 
+## 3.0.0（2026-11-23）
+
+### スキルの軽量化と整理
+
+- Lite（`nihongo/ALWAYS.md`）を 2,704字から約1,200字（約55%軽量化）に整理しました。事実保持、なりすまし拒否、場と形に合わせる、水増し防止、詳細資料と個人設定の参照、ユーザー指示優先の6項目に絞っています。
+- Full（`nihongo/SKILL.md`）を 275行（12,819字）から93行（約5,675字・約56%軽量化）に整理しました。21本の詳細資料（`nihongo/references/`）は維持し、必要な場面の資料だけを読む形にしています。
+
+### Personal（`~/.nihongo/profile.md`）
+
+- 書き方メモの既定保存先をホーム配下の `~/.nihongo/profile.md` とし、4つの箱（`[common]` / `[casual]` / `[work]` / `[formal]`）と「絶対に言わない表現」に分けて管理できるようにしました。
+- 会話の中でユーザーが言い回しや口調を直した時だけ、適用範囲とあわせて1行で確認してから追記する仕組みにしました。裏で勝手に書き込まず、個人情報や固有名詞は書きません。`[casual]` の癖は `[formal]` に持ち込まず、ファイルはいつでも閲覧・削除できます。
+
+### 自動チェッカー（`nihongo-check`）
+
+- Python 3.10+ の標準ライブラリだけで動く統合CLI（`nihongo/scripts/cli.py`、依存パッケージ0）を追加しました。`pyproject.toml` を用意し、`pip install "git+https://github.com/AnIT012/nihongo.git@v3.0.0"` で `nihongo-check` コマンド（`nihongo_check` 名前空間）として導入できます。
+- 次の3つのサブコマンドを追加しました。
+  - `diff <orig> <draft> [--request <req>] [--profile <path>] [--scene formal] [--json]`：原文と直した文を比べて意味のズレやプロフィール違反の候補を検出します。
+  - `fix <orig> <draft> <out> [--request <req>] [--no-trim-commas] [--fail-on-remaining]`：意味が変わった文を原文に戻し、要らない読点を外します。
+  - `git [--base HEAD] [--staged] [--ext .md,.txt] [--request <req>] [--profile <path>] [--scene formal] [--hook] [--json]`：git の変更差分をまとめて確認します。
+- Claude Code の `PostToolUse` フック設定例（`examples/hooks/claude-code-hook.json`、0トークンで実行しズレ検出時は終了コード `2` を返す）と、GitHub Actions の PR チェック例（`examples/hooks/github-actions-docs-check.yml`）を追加しました。
+
+### ドキュメント・対応環境
+
+- README を v3.0.0 の構成（軽量スキル・会話で育つ Personal・0トークン自動チェッカー）に合わせて改訂し、Antigravity（`~/.gemini/config/skills/nihongo/`）と Cursor の導入手順を追加しました。
+
 ## 2.3.2（2026-11-23）
 
 - `revert_broken.py` で、時刻などの誤りを原文に戻す際、隣の文に依頼で追記した内容まで「分割の片割れ」とみなして消さないようにしました。隣の文が戻す側に無い原文の内容語・数値を受け持っているかを確認し、依頼で加えた語句を含む文は残します（Issue #30・PR #33）。

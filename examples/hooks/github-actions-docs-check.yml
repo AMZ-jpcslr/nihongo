@@ -1,0 +1,31 @@
+name: nihongo-docs-check
+
+on:
+  pull_request:
+    paths:
+      - "**/*.md"
+
+permissions:
+  contents: read
+
+jobs:
+  check-meaning:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install nihongo-check
+        run: python3 -m pip install --quiet "git+https://github.com/AnIT012/nihongo.git@v3.0.0"
+
+      - name: Check changed Markdown files for unintended meaning drift
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          BASE_SHA="$(git merge-base "origin/$BASE_REF" HEAD)"
+          nihongo-check git --base "$BASE_SHA" --ext .md

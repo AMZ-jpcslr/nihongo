@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nihongo-check"
+version = "3.0.0"
+description = "原文と直した文の意味のズレ検出・自動復旧・読点整理を行う日本語チェック CLI"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = []
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: Japanese",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+[project.urls]
+Homepage = "https://github.com/AnIT012/nihongo"
+Repository = "https://github.com/AnIT012/nihongo"
+Issues = "https://github.com/AnIT012/nihongo/issues"
+
+[project.scripts]
+nihongo-check = "nihongo_check.cli:main"
+
+[tool.setuptools]
+packages = ["nihongo_check"]
+package-dir = { "nihongo_check" = "nihongo/scripts" }
