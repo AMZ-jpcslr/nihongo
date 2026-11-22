@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPTS = os.path.join(HERE, "..", "nihongo", "scripts")
@@ -66,6 +67,22 @@ def run_revert(src, dst, req):
             cmd += ["--request", paths[3]]
         subprocess.run(cmd, check=True, capture_output=True)
         return open(paths[2], encoding="utf-8").read()
+
+
+class ScriptRegressionTests(unittest.TestCase):
+    def test_check_cases(self):
+        for src, dst, want in CHECK_CASES:
+            with self.subTest(dst=dst):
+                self.assertEqual(bool(check(src, dst)), want)
+
+    def test_revert_cases(self):
+        for src, dst, req, keep, gone in REVERT_CASES:
+            with self.subTest(dst=dst):
+                out = run_revert(src, dst, req)
+                for k in keep:
+                    self.assertIn(k, out)
+                for g in gone:
+                    self.assertNotIn(g, out)
 
 
 def main():

@@ -5,6 +5,7 @@
 """
 import os
 import sys
+import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "nihongo", "scripts"))
 from trim_commas import trim, trim_sentence  # noqa: E402
@@ -33,6 +34,52 @@ CASES = [
 ]
 
 
+KEEP_SENTENCES = [
+    "お手数ですが、よろしくお願いします。",
+    "ただ、set は順番を保証しない。",
+    "利用は無料で、広告も表示されません。",
+]
+
+INLINE_CASES = [
+    ("設定では、`config.yaml` の値を読み込んでから処理を始めるので、時間がかかります。",
+     "設定では、`config.yaml` の値を読み込んでから処理を始めるので、時間がかかります。"),
+    ("手順では、`npm install` を実行します。", "手順では、`npm install` を実行します。"),
+    ("詳しくは、https://example.com を見てください。", "詳しくは、https://example.com を見てください。"),
+    ("資料を、`out.md` に書きます。", "資料を、`out.md` に書きます。"),
+    ("値は`a。b`です。次は、これだ。", "値は`a。b`です。次はこれだ。"),
+    ("`print('a、b')` を、明日送ります。", "`print('a、b')` を明日送ります。"),
+    # Issue #31：本文に私用領域の文字（U+E000 等）が含まれてもそのまま残る
+    ("資料\ue000を保存します。", "資料\ue000を保存します。"),
+    ("資料を、\ue000に保存します。", "資料を\ue000に保存します。"),
+    ("手順\ue000\ue001では、`npm install` を実行します。", "手順\ue000\ue001では、`npm install` を実行します。"),
+]
+
+
+class TrimCommasTests(unittest.TestCase):
+    def test_cases(self):
+        for s, want in CASES:
+            with self.subTest(s=s):
+                _, why = trim_sentence(s)
+                self.assertEqual(bool(why), want)
+
+    def test_keep_sentences(self):
+        for s in KEEP_SENTENCES:
+            with self.subTest(s=s):
+                self.assertFalse(trim_sentence(s)[1])
+
+    def test_code_block(self):
+        text = "資料を、明日送ります。\n```\nprint('a、b')\n```\n"
+        out, _ = trim(text)
+        self.assertIn("print('a、b')", out)
+        self.assertIn("資料を明日送ります。", out)
+
+    def test_inline_and_private_use_chars(self):
+        for src, want in INLINE_CASES:
+            with self.subTest(src=src):
+                got, _ = trim(src)
+                self.assertEqual(got, want)
+
+
 def main():
     bad = 0
     for s, want in CASES:
@@ -41,7 +88,7 @@ def main():
             bad += 1
             print(f"NG: {s}（{'外した' if why else '残した'}、期待 {'外す' if want else '残す'}）")
     # 定型の前置き・接続詞・コードの中は外さない
-    for s in ["お手数ですが、よろしくお願いします。", "ただ、set は順番を保証しない。", "利用は無料で、広告も表示されません。"]:
+    for s in KEEP_SENTENCES:
         if trim_sentence(s)[1]:
             bad += 1
             print(f"NG: 外してはいけない読点を外した：{s}")
@@ -51,21 +98,12 @@ def main():
         bad += 1
         print("NG: コードブロックの扱い")
     # インラインコード・URLで文を切らない。直前の読点は残す（2.2.1）
-    inline = [
-        ("設定では、`config.yaml` の値を読み込んでから処理を始めるので、時間がかかります。",
-         "設定では、`config.yaml` の値を読み込んでから処理を始めるので、時間がかかります。"),
-        ("手順では、`npm install` を実行します。", "手順では、`npm install` を実行します。"),
-        ("詳しくは、https://example.com を見てください。", "詳しくは、https://example.com を見てください。"),
-        ("資料を、`out.md` に書きます。", "資料を、`out.md` に書きます。"),
-        ("値は`a。b`です。次は、これだ。", "値は`a。b`です。次はこれだ。"),
-        ("`print('a、b')` を、明日送ります。", "`print('a、b')` を明日送ります。"),
-    ]
-    for src, want in inline:
+    for src, want in INLINE_CASES:
         got, _ = trim(src)
         if got != want:
             bad += 1
             print(f"NG: インラインコード・URL：{src} → {got}")
-    total = len(CASES) + 4 + len(inline)
+    total = len(CASES) + len(KEEP_SENTENCES) + 1 + len(INLINE_CASES)
     print(f"{total - bad}/{total} OK")
     sys.exit(1 if bad else 0)
 
